@@ -1,0 +1,19 @@
+Package: RHCgen
+Title: Pacote R para Automação e Padronização do Processamento de Dados do
+    RHC (por Anderson Lineu)
+Version: 0.1.0
+Authors@R: 
+    person("Anderson", "Lineu", , "andersonlineu@gmail.com", role = c("aut", "cre"))
+Description: RHCgen: Um Pacote R para Automação e Padronização do
+    Processamento de Dados do Registro Hospitalar de Câncer no Brasil. O
+    pacote RHCgen oferece uma série de funções que abrangem desde a
+    leitura e carregamento de arquivos até a filtragem e recodificação de
+    variáveis, tornando o processo de preparação de dados mais eficiente e
+    menos suscetível a erros. Ao automatizar essas etapas, o pacote visa
+    garantir a consistência e a qualidade dos dados, ao mesmo tempo em que
+    proporciona uma plataforma flexível e adaptável para diferentes tipos
+    de análises e estudos epidemiológicos.
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
