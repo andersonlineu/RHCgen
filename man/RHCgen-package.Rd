@@ -15,6 +15,12 @@ Veja o Baixar_Arquivos_DBF para um guia passo a passo sobre como baixar os arqui
 }
 \seealso{
 \code{\link{Baixar_Arquivos_DBF}}
+
+Links úteis:
+
+Dicionário de Variáveis: \url{ https://irhc.inca.gov.br/RHCNet/documentosTabWin.action?doc=dicionario.dados}
+
+Escore de Completude:  \url{ https://www.scielo.br/j/csp/a/HXqrdksBsMrr4R9Ydnnmqcf/?format=pdf&lang=pt}
 }
 \author{
 Anderson Lineu

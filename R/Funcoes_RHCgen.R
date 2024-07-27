@@ -1,27 +1,18 @@
-#' @title Funções para Manipulação de Dados do RHC
-#'
-#' @description Funções para carregar e combinar arquivos RHC, construir bases de dados, filtrar dados, mapear siglas de estados, modificar tipos de variáveis, recodificar variáveis e renomear colunas.
-#'
-#' @author
-#'   \strong{Autor:} Anderson Lineu \email{andersonlineu@gmail.com}
-#'
-#' @details Este pacote foi desenvolvido para facilitar a manipulação e análise de dados do RHC, fornecendo um conjunto abrangente de funções para diversas tarefas relacionadas à preparação e limpeza de dados.
-#' @name Funcoes_Pacote
-NULL
+
 
 #' Ler e Juntar Arquivo DBF
 #'
-#' @description Esta função ler e junta arquivos DBF do RHC.
+#' @description Esta função ler e junta arquivos DBF do RHC e adiciona uma nova coluna: Ano_do_Banco, a partir do ano do arquivo DBF.
 #'
 #' @param none Não são necessários parâmetros externos, pois a função opera com base no conteúdo do diretório especificado.
 #' @return Retorna um dataframe que junta todos os arquivos DBF no diretório, ou NULL se nenhum arquivo válido for encontrado ou se eles não puderem ser combinados devido a inconsistências nas estruturas de colunas.
 #' É fundamental que todos os arquivos tenham o mesmo nome que vieram do IntegradorRHC e estejam todos na pasta de trabalho.
 #' @export
 #' @name leraquivoDBF
-#' @examples 
-#' # Supondo que você tenha no diretório de trabalho arquivos DBF do RHC que permanecem com o mesmo nome que vieram do Integrador,
+#' @examples
+#' # Supondo que você tenha no diretório de trabalho arquivos DBF do RHC que permanecem com o mesmo nome que vieram do Integrador (Exemplo: rhc20.dbf, nome padrão do RHC inciando que o ano do banco contidono arquvio é 2020).
 #' # Use a função da seguinte forma:
-#' 
+#'
 #' dados_RHC_combinados <- leraquivoDBF()
 #' # Se nenhum arquivo for encontrado ou se houver erros ao juntar os arquivos, dados_combinados será NULL.
 #' # Caso contrário, você terá um dataframe com todos os dados combinados dos arquivos DBF.
@@ -31,29 +22,29 @@ leraquivoDBF <- function() {
     install.packages("foreign")
     library(foreign)
   }
-  
+
   # Função interna para verificar a consistência da estrutura de colunas
-  verificarEstruturaColunas <- function(df_list) {
-    if (length(df_list) < 1) return(NULL)  # Retorna NULL se a lista estiver vazia
-    ref_columns <- names(df_list[[1]])
-    for (df in df_list) {
-      if (!identical(names(df), ref_columns)) {
+  verificarEstruturaColunas <- function(dados_list) {
+    if (length(dados_list) < 1) return(NULL)  # Retorna NULL se a lista estiver vazia
+    ref_columns <- names(dados_list[[1]])
+    for (dados in dados_list) {
+      if (!identical(names(dados), ref_columns)) {
         stop("Os dataframes não têm a mesma estrutura de colunas.")
       }
     }
   }
-  
+
   # Listar todos os arquivos .dbf que começam com "rhc"
   arquivosRHC <- list.files(pattern = "^rhc.*\\.dbf$", ignore.case = TRUE, full.names = TRUE)
-  
+
   # Verificar se existem arquivos para processar
   if (length(arquivosRHC) == 0) {
     message("Nenhum arquivo 'rhc*.dbf' encontrado.")
     return(NULL)
   }
-  
+
   message("Iniciando Tarefa...")
-  
+
   # Criar lista para armazenar os data frames
   lista_dataframes <- lapply(arquivosRHC, function(arquivo) {
     message(paste("Processando arquivo:", arquivo))
@@ -63,6 +54,21 @@ leraquivoDBF <- function() {
         message("Aviso: O arquivo está vazio.")
         return(NULL)
       }
+
+      # Extrair o ano do nome do arquivo
+      ano_str <- sub("^rhc(.*)(\\d{2})\\.dbf$", "\\2", basename(arquivo), ignore.case = TRUE)
+      ano <- as.numeric(ano_str)
+      if (!is.na(ano)) {
+        if (ano < 50) {
+          ano <- 2000 + ano  # Assumindo anos de 2000 a 2049
+        } else {
+          ano <- 1900 + ano  # Assumindo anos de 1950 a 1999
+        }
+      }
+      message("Criando coluna Ano_do_Banco, a partir do ano do arquivo DBF.")
+      # Adicionar coluna Ano_do_Banco
+      data$Ano_do_Banco <- ano
+
       message("Leitura finalizada!")
       return(data)
     }, error = function(e) {
@@ -71,23 +77,24 @@ leraquivoDBF <- function() {
       return(NULL)
     })
   })
-  
+
   # Remover NULLs da lista de dataframes
   lista_dataframes <- Filter(Negate(is.null), lista_dataframes)
-  
+
   # Verificar a consistência das colunas
   verificarEstruturaColunas(lista_dataframes)
-  
+
   # Unir os data frames usando rbind
   if (length(lista_dataframes) > 0) {
     dataRHCCombinados <- do.call(rbind, lista_dataframes)
-    message("Tarefa finalizada com sucesso!")
+    message("Tarefa finalizada com sucesso! Foi adicionada uma coluna chamada Ano_do_Banco no final do dataframe.")
     return(dataRHCCombinados)
   } else {
     message("Nenhum dataframe válido para combinar.")
     return(NULL)
   }
 }
+
 
 
 #' Renomear Colunas de um DataFrame
@@ -177,13 +184,13 @@ renomear_colunas <- function(data) {
 #' Esta função converte todas as variáveis de um dataframe para o tipo character, exceto as colunas de data, que são convertidas primeiro para character e depois para data.
 #' A coluna `Idade` é convertida para o tipo numérico.
 #'
-#' @param data Um dataframe que contém as variáveis a serem convertidas. 
+#' @param data Um dataframe que contém as variáveis a serem convertidas.
 #' @return Retorna um dataframe com as variáveis convertidas para os tipos apropriados conforme definido.
 #' @export
 #' @name modificar_tipo_variavel
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#'
 #' dados_RHC_combinados <- modificar_tipo_variavel(dados_RHC_combinados)
 modificar_tipo_variavel <- function(data) {
   message("Iniciando a conversão dos tipos de variáveis.")
@@ -237,9 +244,9 @@ modificar_tipo_variavel <- function(data) {
 #' @return Retorna um dataframe com as variáveis recodificadas.
 #' @export
 #' @name recodificar_variaveis
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#'
 #' dados_RHC_combinados <- recodificar_variaveis(dados_RHC_combinados)
 recodificar_variaveis <- function(data) {
   message("Iniciando a recodificação das variáveis.")
@@ -502,9 +509,9 @@ recodificar_variaveis <- function(data) {
 #' @return Retorna um dataframe com os nomes completos dos estados adicionados em novas colunas.
 #' @export
 #' @name renomear_siglas_estados
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#'
 #' dados_RHC_combinados <- renomear_siglas_estados(dados_RHC_combinados)
 renomear_siglas_estados <- function(dados) {
   message("Iniciando o mapeamento das siglas dos estados para nomes completos.")
@@ -535,7 +542,7 @@ renomear_siglas_estados <- function(dados) {
     message("A coluna 'UF_Unidade_Hospital' não foi encontrada no dataframe.")
   }
 
-  message("Mapeamento das siglas dos estados concluído com sucesso. Foram criadas mais duas colunas no final do dataframe, chamadas Nome_Estado_Residencia e Nome_Estado_Hospital.")
+  message("Mapeamento das siglas dos estados concluído com sucesso. Foram adicionadas mais duas colunas no final do dataframe, chamadas Nome_Estado_Residencia e Nome_Estado_Hospital.")
   return(dados)
 }
 
@@ -550,9 +557,9 @@ renomear_siglas_estados <- function(dados) {
 #' @return Retorna um dataframe com os nomes completos dos CID  de 3 dígitos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_CID_3digitos
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#'
 #' dados_RHC_combinados <- renomear_CID_3digitos(dados_RHC_combinados)
 renomear_CID_3digitos <- function(dados) {
   message("Iniciando o ajuste dos códigos CID-3 dígitos para nomes completos.")
@@ -631,7 +638,7 @@ renomear_CID_3digitos <- function(dados) {
     message("A coluna 'Localizacao_Primaria_3D' não foi encontrada no dataframe.")
   }
 
-  message("Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi criada uma coluna no final do dataframe, chamada CID3d.")
+  message("Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID3d.")
   return(dados)
 }
 
@@ -648,9 +655,9 @@ renomear_CID_3digitos <- function(dados) {
 #' @return Retorna um dataframe com os nomes completos dos CID  de 4 dígitos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_CID_4digitos
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#'
 #' dados_RHC_combinados <- renomear_CID_4digitos(dados_RHC_combinados)
 renomear_CID_4digitos <- function(dados) {
   message("Iniciando o ajuste dos códigos CID-4 dígitos para nomes completos.")
@@ -1440,7 +1447,7 @@ renomear_CID_4digitos <- function(dados) {
     message("A coluna 'Localizacao_Primaria_4D' não foi encontrada no dataframe.")
   }
 
-  message("Ajuste dos códigos CID-4 dígitos concluído com sucesso. Foi criada uma coluna no final do dataframe, chamada CID4d.")
+  message("Ajuste dos códigos CID-4 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID4d.")
   return(dados)
 }
 
@@ -1458,412 +1465,412 @@ renomear_CID_4digitos <- function(dados) {
 #' @return Retorna um dataframe com os nomes completos dos estabelecimentos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_CNES
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
+#'
 #' dados_RHC_combinados <- renomear_CNES(dados_RHC_combinados)
 renomear_CNES <- function(dados) {
   message("Iniciando o ajuste dos códigos CNES para nomes completos dos estabelecimentos.")
-  
+
   # Definição do dataframe de mapeamento de CNES para nomes dos estabelecimentos
   cnes_names <- data.frame(
-    CNES = c("2001586", "2005417", "2007037", "2006197", "2006448", "2020645", "2012677", "2017644", "3400557", 
-             "6602533", "2601680", "2772280", "2525569", "2802112", "4028155", "0003808", "0003816", "0003786", 
-             "0003832", "0004278", "0003859", "0003921", "2802104", "2799286", "2301318", "2402076", "2772566", 
-             "2407205", "2564211", "2563681", "2561492", "2723220", "2651394", "2611686", "2497654", "2528843", 
-             "2723190", "3021114", "0010510", "0010499", "0010456", "0010464", "0010480", "0010472", "0010502", 
-             "6876617", "2547821", "2448521", "2465833", "2494442", "0011738", "0011800", "0011746", "4044916", 
-             "2442108", "2361787", "2506815", "2338424", "2338351", "7891067", "2531348", "6497489", "2697696", 
-             "2726653", "2646536", "2171945", "2098938", "2200457", "2695324", "0026859", "0027049", "0027014", 
-             "0026840", "0026964", "2126494", "2148293", "2159252", "2118661", "2205440", "2215586", "2105780", 
-             "2153025", "2153114", "2153106", "2149990", "2219646", "2195453", "2775999", "9650105", "6442560", 
-             "2209195", "2129469", "2110075", "2111640", "2127989", "3145425", "2161354", "2206528", "2184834", 
-             "2165058", "2206595", "2146355", "6601804", "2761092", "0009709", "0009776", "0009725", "0009717", 
-             "2376334", "6201059", "6583326", "2756951", "2534444", "2659107", "2655519", "2396866", "2795671", 
-             "2334321", "7871902", "2332981", "5585422", "2315793", "2676060", "2399776", "2399741", "2605473", 
-             "3369293", "2427419", "2639009", "9262407", "0000809", "0000477", "0000434", "0000582", "2427427", 
-             "0000396", "4009444", "2726998", "3285391", "7445571", "2439360", "2576341", "0013633", "0013838", 
-             "0013846", "0014109", "2737434", "2740338", "2384299", "0015563", "0015334", "0015644", "3075516", 
-             "0015245", "9130780", "2591049", "5373190", "2741989", "2781859", "2577623", "2743469", "2586797", 
-             "2586169", "0017868", "2686953", "7205686", "7845138", "2280051", "2278286", "2287250", "2287447", 
-             "2287285", "2278855", "0012556", "0012505", "2275562", "2268779", "2296241", "2269988", "2269384", 
-             "2269880", "2295423", "2269775", "2273659", "2269899", "2295415", "2269783", "2280167", "2296616", 
-             "7185081", "2295067", "2273454", "2269821", "2273462", "2292386", "2273748", "25186", "3675580", 
-             "2371707", "2409194", "2409151", "2656930", "8003629", "2653982", "6599877", "4001303", "2515377", 
-             "7068336", "2319659", "2261987", "2241021", "2266474", "2232014", "2262274", "2223538", "2223546", 
-             "2263858", "2707918", "2261057", "2252287", "2246988", "2246929", "2252694", "2253054", "2237601", 
-             "2262568", "2265052", "2237253", "2237571", "2232995", "2255936", "2244306", "2254611", "2244357", 
-             "2259907", "2248298", "2248204", "2232022", "2227932", "2248190", "2558246", "2558254", "2537788", 
-             "2758164", "19445", "2691841", "19283", "2691868", "3157245", "2522691", "2306336", "2560771", 
-             "2436469", "6048692", "2504332", "2543044", "2568713", "2521792", "2491710", "0002283", "2816210", 
-             "0002534", "2078775", "2082527", "2081253", "2083094", "2083604", "2090236", "2790602", "2748223", 
-             "2704900", "2081482", "2082128", "2079798", "2081490", "2089327", "2084163", "2705982", "2081512", 
-             "2754843", "2027186", "2085194", "7066376", "2083086", "2786435", "2716801", "2081458", "2025507", 
-             "2083116", "2080680", "2096498", "4049020", "2077434", "2087057", "2772310", "7400926", "2755130", 
-             "2030705", "2082187", "2080400", "2084414", "7361289", "2082888", "2080273", "0008923", "0008753", 
-             "2025752", "2080354", "2079720", "2025361", "2027356", "2082594", "2080931", "2084228", "2798298", 
-             "2077396", "0009601", "2748029", "5869412", "2078287", "2688573", "2077574", "2088576", "2078015", 
-             "2077531", "2071371", "2066572", "2077523", "2688689", "2080575", "2077477", "2077485", "2077590", 
-             "2089696", "2080125", "6123740", "2091755", "2081695", "2092298", "2708779", "2079321", "2079828", 
-             "3126838", "2749319", "2080664", "2600536", "2786117", "9255400", "0004251", "0001023", "2430843", 
+    CNES = c("2001586", "2005417", "2007037", "2006197", "2006448", "2020645", "2012677", "2017644", "3400557",
+             "6602533", "2601680", "2772280", "2525569", "2802112", "4028155", "0003808", "0003816", "0003786",
+             "0003832", "0004278", "0003859", "0003921", "2802104", "2799286", "2301318", "2402076", "2772566",
+             "2407205", "2564211", "2563681", "2561492", "2723220", "2651394", "2611686", "2497654", "2528843",
+             "2723190", "3021114", "0010510", "0010499", "0010456", "0010464", "0010480", "0010472", "0010502",
+             "6876617", "2547821", "2448521", "2465833", "2494442", "0011738", "0011800", "0011746", "4044916",
+             "2442108", "2361787", "2506815", "2338424", "2338351", "7891067", "2531348", "6497489", "2697696",
+             "2726653", "2646536", "2171945", "2098938", "2200457", "2695324", "0026859", "0027049", "0027014",
+             "0026840", "0026964", "2126494", "2148293", "2159252", "2118661", "2205440", "2215586", "2105780",
+             "2153025", "2153114", "2153106", "2149990", "2219646", "2195453", "2775999", "9650105", "6442560",
+             "2209195", "2129469", "2110075", "2111640", "2127989", "3145425", "2161354", "2206528", "2184834",
+             "2165058", "2206595", "2146355", "6601804", "2761092", "0009709", "0009776", "0009725", "0009717",
+             "2376334", "6201059", "6583326", "2756951", "2534444", "2659107", "2655519", "2396866", "2795671",
+             "2334321", "7871902", "2332981", "5585422", "2315793", "2676060", "2399776", "2399741", "2605473",
+             "3369293", "2427419", "2639009", "9262407", "0000809", "0000477", "0000434", "0000582", "2427427",
+             "0000396", "4009444", "2726998", "3285391", "7445571", "2439360", "2576341", "0013633", "0013838",
+             "0013846", "0014109", "2737434", "2740338", "2384299", "0015563", "0015334", "0015644", "3075516",
+             "0015245", "9130780", "2591049", "5373190", "2741989", "2781859", "2577623", "2743469", "2586797",
+             "2586169", "0017868", "2686953", "7205686", "7845138", "2280051", "2278286", "2287250", "2287447",
+             "2287285", "2278855", "0012556", "0012505", "2275562", "2268779", "2296241", "2269988", "2269384",
+             "2269880", "2295423", "2269775", "2273659", "2269899", "2295415", "2269783", "2280167", "2296616",
+             "7185081", "2295067", "2273454", "2269821", "2273462", "2292386", "2273748", "25186", "3675580",
+             "2371707", "2409194", "2409151", "2656930", "8003629", "2653982", "6599877", "4001303", "2515377",
+             "7068336", "2319659", "2261987", "2241021", "2266474", "2232014", "2262274", "2223538", "2223546",
+             "2263858", "2707918", "2261057", "2252287", "2246988", "2246929", "2252694", "2253054", "2237601",
+             "2262568", "2265052", "2237253", "2237571", "2232995", "2255936", "2244306", "2254611", "2244357",
+             "2259907", "2248298", "2248204", "2232022", "2227932", "2248190", "2558246", "2558254", "2537788",
+             "2758164", "19445", "2691841", "19283", "2691868", "3157245", "2522691", "2306336", "2560771",
+             "2436469", "6048692", "2504332", "2543044", "2568713", "2521792", "2491710", "0002283", "2816210",
+             "0002534", "2078775", "2082527", "2081253", "2083094", "2083604", "2090236", "2790602", "2748223",
+             "2704900", "2081482", "2082128", "2079798", "2081490", "2089327", "2084163", "2705982", "2081512",
+             "2754843", "2027186", "2085194", "7066376", "2083086", "2786435", "2716801", "2081458", "2025507",
+             "2083116", "2080680", "2096498", "4049020", "2077434", "2087057", "2772310", "7400926", "2755130",
+             "2030705", "2082187", "2080400", "2084414", "7361289", "2082888", "2080273", "0008923", "0008753",
+             "2025752", "2080354", "2079720", "2025361", "2027356", "2082594", "2080931", "2084228", "2798298",
+             "2077396", "0009601", "2748029", "5869412", "2078287", "2688573", "2077574", "2088576", "2078015",
+             "2077531", "2071371", "2066572", "2077523", "2688689", "2080575", "2077477", "2077485", "2077590",
+             "2089696", "2080125", "6123740", "2091755", "2081695", "2092298", "2708779", "2079321", "2079828",
+             "3126838", "2749319", "2080664", "2600536", "2786117", "9255400", "0004251", "0001023", "2430843",
              "3477371", "2281821", "0019402", "0009369"),
-    ESTABELECIMENTO = c("Hospital da Fundação Hospitalar Estadual do Acre", 
-                        "Complexo Hospitalar Manoel André - CHAMA", 
-                        "Hospital da Santa Casa de Misericórdia de Maceió", 
-                        "Hospital Universitário Alberto Antunes/Universidade Federal de Alagoas", 
-                        "Hospital do Açúcar/Fundação da Agro-Indústria de Açúcar e do Álcool de Alagoas- Hospital veredas", 
-                        "Hospital de Clínicas Dr. Alberto Lima", 
-                        "Hospital da Fundação Centro de Controle de Oncologia/CECON", 
-                        "Hospital Universitário Getúlio Vargas", 
-                        "Instituto de Mama do Amazonas - SENSUMED", 
-                        "Hospital Estadual da Criança", 
-                        "Hospital Dom Pedro de Alcântara/Santa Casa de Misericórdia de Feira de Santana", 
-                        "Hospital Calixto Midlej Filho", 
-                        "Hospital Manoel Novaes", 
-                        "Hospital São José Maternidade Santa Helena/Santa Casa de Mis.", 
-                        "Hospital Regional de Juazeiro", 
-                        "Hospital São Rafael/Fundação Monte Tabor", 
-                        "Hospital Professor Edgard Santos/Hospital Universitário MEC - Universidade Federal da Bahia/FAPEX", 
-                        "Hospital Aristidez Maltez/Liga Baiana Contra o Câncer", 
-                        "Hospital Santa Isabel/Santa Casa de Misericórdia da Bahia", 
-                        "Hospital Martagão Gesteira/Liga Álvaro Bahia Contra a Mortalidade Infantil", 
-                        "Hospital Geral Roberto Santos", 
-                        "Centro Estadual de Oncologia - CICAN", 
-                        "Hospital Santo Antônio/Obras Sociais Irmã Dulce", 
-                        "Hospital Maternidade Luiz Argolo- Irmandade da Sta Casa de Miser De S Ant de Jesus", 
-                        "Hospital Municipal de Teixeira de Freitas/Prefeitura Municipal de T. de Freitas", 
-                        "Hospital Geral de Vitória da Conquista", 
-                        "Conquista Assistência Medica LTDA/ONCO-MED RAC", 
-                        "Serviço de Assistência Médica de Urgencia S. A. (SAMUR)", 
-                        "Hospital e Maternidade São Vicente de Paulo", 
-                        "Hospital Infantil Albert Sabin", 
-                        "Hospital Universitário Walter Cantídio", 
-                        "Instituto de Câncer do Ceará", 
-                        "Hospital da Irmandade Beneficente Santa Casa de Misericórdia de Fortaleza", 
-                        "Hospital Cura D'ars/Beneficência Camiliana", 
-                        "HGF- Hospital Geral de Fortaleza/Secretaria de Estado da Saude", 
-                        "Hospital Distrital Dr. Fernandes Távora/Instituto Clínico de Fortaleza", 
-                        "Centro Regional Integrado de Oncologia/CRIO", 
-                        "Hospital da Santa Casa de Misericórdia de Sobral", 
-                        "Hospital Universitário de Brasília/Fundação da Universidade de Brasília", 
-                        "Hospital Regional de Taguatinga", 
-                        "Hospital de Base do Distrito Federal", 
-                        "Hospital Regional da Asa Norte", 
-                        "Hospital Regional de Ceilândia", 
-                        "Hospital Regional do Gama", 
-                        "Hospital Regional de Sobradinho", 
-                        "Hospital da Criança de Brasília Jose Alencar - HCB", 
-                        "Hospital Evangélico de Cachoeiro de Itapemirim", 
-                        "Hospital São José", 
-                        "Hospital Rio Doce", 
-                        "Hospital Evangélico de Vila Velha", 
-                        "Hospital Santa Rita de Cássia/Associação Feminina Educacional de Combate ao Câncer", 
-                        "Hospital Infantil Nossa Senhora da Glória", 
-                        "Hospital da Santa Casa de Misericórdia de Vitória", 
-                        "Hospital Universitário Cassiano Antônio de Moraes", 
-                        "Hospital Evangélico Anápolis/Fundação James Fanstone", 
-                        "Santa Casa de Misericórdia de Anápolis/Fundação de Assistencia Social de Anápolis", 
-                        "Hospital Araújo Jorge/Hospital do Câncer/Associação de Combate ao Câncer em Goiás", 
-                        "Hospital das Clínicas da Universidade Federal Goiás", 
-                        "Hospital da Santa Casa de Misericórdia de Goiânia", 
-                        "Hospital Regional de Caxias Dr Everaldo Ferreira Aragão", 
-                        "Hospital São Rafael", 
-                        "ONCORADIUM", 
-                        "Instituto Maranhense de Oncologia Aldenora Belo IMOAB/Fundação Antônio Jorge Dino", 
-                        "Hospital Universitário Federal do Maranhão (HUUFM)", 
-                        "Hospital Geral Tarquínio Lopes Filho/SES", 
-                        "Casa de Caridade de Alfenas Nossa Senhora do Perpétuo Socorro", 
-                        "Hospital Ibiapaba S/A", 
-                        "Hospital Luxemburgo/Associação dos Amigos do Hospital Mário Penna", 
-                        "Hospital da Baleia/Fundação Benjamin Guimarães", 
-                        "Hospital Felício Rocho/Fundação Felice Rosso", 
-                        "Hospital das Clínicas da UFMG", 
-                        "Hospital da Santa Casa de Misericórdia de Belo Horizonte", 
-                        "Hospital São Francisco de Assis", 
-                        "Hospital Alberto Cavalcanti/Fundação Hospitalar do Estado de Minas Gerais", 
-                        "Hospital Professor Osvaldo R. Franco/Prefeitura de Betim/Fundo Municipal de Betim", 
-                        "Hospital Imaculada Conceição", 
-                        "Hospital São João de Deus/Fundação Geraldo Corrêa", 
-                        "Hospital Bom Samaritano/Beneficência Social Bom Samaritano", 
-                        "Hospital Márcio Cunha/Fundação São Francisco Xavier", 
-                        "Hospital Nossa Senhora das Dores", 
-                        "Hospital Manoel Goncalves", 
-                        "Hospital Maria José Baeta Reis/ASCOMCER", 
-                        "Hospital Dr. João Felício S/A", 
-                        "Instituto Oncológico", 
-                        "Hospital da Santa Casa de Montes Claros/Irmandade Nossa Senhora das Mercês de Montes Claros", 
-                        "Hospital Dílson de Quadros Godinho/Fundação Dílson de Quadros Godinho", 
-                        "Hospital do Câncer de Muriaé/Fundação Cristiano Varella", 
-                        "Hospital da Santa Casa de Misericórdia de Passos", 
-                        "Santa Casa de Misericórdia de Patos de Minas", 
-                        "Centro Oncológico AZ/Patos de Minas/MG", 
-                        "Hospital Santa Casa de Patrocínio", 
-                        "Hospital da Santa Casa de Misericórdia de Poços de Caldas", 
-                        "Clínica Memorial", 
-                        "Hospital Nossa Senhora das Dores/Irmandade Hospital N. Sra das Dores", 
-                        "Hospital das Clinicas Samuel Libânio", 
-                        "Instituto Sul Mineiro de Oncologia", 
-                        "Hospital da Santa Casa de Misericórdia de São João Del Rei", 
-                        "Hospital Nossa Senhora das Graças", 
-                        "Hospital Bom Samaritano", 
-                        "Hospital Dr. Hélio Angotti/Associação de Combate ao Câncer do Brasil Central", 
-                        "Hospital Escola da Universidade Federal do Triângulo Mineiro - Universidade Federal do Triângulo Mineiro", 
-                        "Hospital de Clínicas de Uberlândia/Universidade Federal de Uberlândia", 
-                        "Hospital e Maternidade Municipal Dr. Odelmo Leão Carneiro", 
-                        "Hospital Bom Pastor/Fundação Hospitalar do Município de Varginha", 
-                        "Hospital Universitário Maria Aparecida Pedrossian/UFMS", 
-                        "Hospital do Câncer Professor Dr. Alfredo Abrão/Fundação Carmem Prudente de Mato Grosso do Sul", 
-                        "Hospital Regional de Mato Grosso do Sul/Fundação Serviços de Saúde de Mato Grosso do Sul", 
-                        "Hospital da Santa Casa/Associação Beneficente de Campo Grande", 
-                        "Santa Casa de Misericórdia de Corumbá/Associação Beneficente de Corumbá", 
-                        "Hospital CASSEMS Unidade Dourados", 
-                        "Centro de Tratamento de Câncer de Dourados", 
-                        "Hospital Nossa Senhora Auxiliadora de Três Lagoas", 
-                        "Hospital do Câncer de Mato Grosso/Associação Matogrossense de Combate ao Câncer - AMCC", 
-                        "Hospital Geral Universitário/Associação de Proteção a Maternidade e a Infância Cuiabá", 
-                        "Hospital da Sociedade Beneficente Santa Casa de Misericórdia de Cuiabá", 
-                        "Santa Casa de Misericórdia e Maternidade de Rondonópolis", 
-                        "Hospital Santo Antonio/Fundação de Saúde Comunitária de Sinop", 
-                        "Hospital Ofir Loyola", 
-                        "Hospital Oncológico Infantil Octávio Lobo", 
-                        "Hospital Universitário João de Barros Barreto", 
-                        "Hospital Regional do Baixo Amazonas Dr. Waldemar Penna", 
-                        "Hospital da Fundação Assistência da Paraíba/FAP", 
-                        "Hospital Universitário Alcides Carneiro/Universidade Federal de Campina Grande", 
-                        "Hospital São Vicente de Paula/Instituto Walfredo Guedes Pereira", 
-                        "Hospital Napoleão Laureano", 
-                        "Hospital Regional Dep. Janduhy Carneiro", 
-                        "Hospital Memorial de Arcoverde", 
-                        "Hospital Regional do Agreste Dr. Waldemiro Ferrreira/Fund. Saude Amaury de Medeiros", 
-                        "Casa de Saúde e Maternidade Nossa Senhora do Perpétuo Socorro", 
-                        "Hospital Dom Tomas", 
-                        "Hospital da Fundação de Hematologia e Hemoterapia de Pernambuco/HEMOPE", 
-                        "Hospital Universitário Oswaldo Cruz", 
-                        "Instituto de Medicina Integral Prof. Fernanda Figueira - IMIP", 
-                        "Hospital de Câncer de Pernambuco/Sociedade Pernambucana do Combate ao Câncer", 
-                        "Hospital Barão de Lucena/Fundação de Saúde Amaury de Medeiros", 
-                        "Hospital das Clínicas/Universidade Federal de Pernambuco", 
-                        "Maternidade Dr. Marques Bastos e Hospital Infantil Dr. Mirócles Véras", 
-                        "Hospital São Marcos/Sociedade Piauiense Combate ao Câncer", 
-                        "Hospital Universitário da Universidade Federal do Piaui", 
-                        "ONCOCENTER", 
-                        "Hospital da Providência/Província Brasileira da Congregação Irmãs Filhas da Caridade de São Vicente de Paulo", 
-                        "Hospital Regional João de Freitas/Associação Norte Paranaense de Combate ao Câncer ao Câncer", 
-                        "Hospital Angelina Caron/Sociedade Hospitalar Angelina Caron", 
-                        "Hospital São Lucas", 
-                        "Hospital do Rocio", 
-                        "Hospital Santa Casa de Misericórdia/Associação Beneficiente Hospitalar Santa Casa de Misericórdia", 
-                        "CEONC", 
-                        "Hospital do Câncer de Cascavel UOPECCAN", 
-                        "Hospital de Clínicas/Universidade Federal do Paraná", 
-                        "Hospital Infantil Pequeno Príncipe/Associação Hospitalar de Proteção à Infância Dr. Raul Carneiro", 
-                        "Hospital Santa Casa/Irmandade da Santa Casa de Misericórdia de Curitiba", 
-                        "Hospital Erasto Gaertner/Liga Paranaense de Combate ao Câncer", 
-                        "Hospital São Vicente", 
-                        "Hospital Universitário Evangélico Mackenzie", 
-                        "Clinica RADION", 
-                        "Hospital Ministro Costa Cavalcante/Fundação de Saúde Itaiguapy", 
-                        "CEONC", 
-                        "Hospital de Caridade São Vicente de Paulo", 
-                        "Hospital Universitário Regional Norte do Paraná/Universidade Estadual de Londrina", 
-                        "Instituto de Câncer de Londrina", 
-                        "Hospital e Maternidade Santa Rita", 
-                        "Centro de Oncologia e Radioterapia Santana Ltda", 
-                        "Hospital do Câncer de Maringá/Instituto de Oncologia e Hematologia Maringá SC Ltda", 
-                        "Hospital Policlínica Pato Branco AS", 
-                        "Hospital da Santa Casa de Misericórdia de Ponta Grossa", 
-                        "Instituto Sul Paranense de Radioterapia", 
-                        "UOPECCAN - Filial Umuarama", 
-                        "Santa Casa de Misericórdia de Barra Mansa", 
-                        "Hospital Santa Isabel", 
-                        "Sociedade Portuguesa de Beneficiencia de Campos", 
-                        "Hospital Universitário Álvaro Alvim", 
-                        "Hospital Dr. Beda", 
-                        "Hospital São José do Avaí/Conferência São José do Avaí", 
-                        "Hospital Municipal Orêncio de Freitas", 
-                        "Hospital Universitário Antônio Pedro - HUAP/UFF", 
-                        "Hospital Alcides Carneiro", 
-                        "Centro de Terapia Oncológica", 
-                        "Hospital Regional Darcy Vargas", 
-                        "Hospital dos Servidores do Estado", 
-                        "Hospital Geral do Andaraí", 
-                        "Hospital Geral de Bonsucesso", 
-                        "Hospital Federal Cardoso Fontes", 
-                        "Hospital Geral de Ipanema", 
-                        "Hospital Geral da Lagoa", 
-                        "Hospital Mário Kroeff", 
-                        "Hospital Universitário Gaffrée e Guinle", 
-                        "Hospital Universitário Pedro Ernesto-HUPE/UERJ", 
-                        "Hospital Universitário Clementino Fraga Filho/UFRJ", 
-                        "Instituto de Puericultura e Pediatria Martagão Gesteira/UFRJ", 
-                        "Hospital Estadual Transplante Câncer e Cirurgia Infantil", 
-                        "Instituto Estadual de Hematologia Arthur Siqueira Cavalcanti", 
-                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer I", 
-                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer II", 
-                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer III", 
-                        "Hospital São José/Associação Congregação de Santa Catarina", 
-                        "Hospital Universitário de Vassouras", 
-                        "Hospital Jardim Amália Ltda - HINJA", 
-                        "Hospital da LMECC", 
-                        "Hospital Wilson Rosado", 
-                        "Hospital Dr. Luiz Antônio/Liga Norteriograndense Contra o Câncer", 
-                        "Hospital Infantil Varela Santiago", 
-                        "Hospital Rio Grande", 
-                        "Hospital do Coração de Natal Ltda", 
-                        "Hospital Universitário Onofre Lopes - HUOL", 
-                        "Hospital Regional de Cacoal - HRC", 
-                        "Hospital de Base Dr. Ary Pinheiro/Hospital de Base Porto Velho", 
-                        "Instituto de Oncologia e Radioterapia São Pellegrino", 
-                        "Hospital de Amor da Amazônia", 
-                        "Hospital Geral de Roraima/HGR", 
-                        "Santa Casa de Caridade de Bagé", 
-                        "Hospital Tacchini", 
-                        "Hospital Caridade Beneficência Cachoeira do Sul", 
-                        "Hospital Nossa Senhora das Graças", 
-                        "Hospital de Caridade e Beneficência", 
-                        "Hospital Geral/Fundação UCS Hospital Geral de Caxias do Sul", 
-                        "Hospital Pompéia", 
-                        "Hospital São Vicente de Paulo/Associação das Damas de Caridade", 
-                        "Hospital da Fundação Hospitalar Santa Terezinha de Erechim", 
-                        "Hospital da Associação Hospital de Caridade de Ijuí", 
-                        "Hospital Bruno Born", 
-                        "Hospital São Vicente de Paulo", 
-                        "Hospital de Clínicas de Passo Fundo", 
-                        "Hospital Escola da UFPEL", 
-                        "Hospital da Santa Casa de Misericórdia de Pelotas", 
-                        "Hospital de Clínicas de Porto Alegre", 
-                        "Hospital São Lucas da PUCRS", 
-                        "Hospital Fêmina S/A", 
-                        "Hospital da Santa Casa de Misericórdia de Porto Alegre", 
-                        "Hospital Nossa Senhora da Conceição S/A", 
-                        "Santa Casa do Rio Grande", 
-                        "Hospital Ana Nery", 
-                        "Hospital Universitário de Santa Maria", 
-                        "Hospital Vida Saúde", 
-                        "Hospital de Caridade de Santiago", 
-                        "Hospital Santo Angelo", 
-                        "Hospital Ivan Goulart", 
-                        "Santa Casa de São Gabriel", 
-                        "Hospital Centenário", 
-                        "Hospital Bom Jesus", 
-                        "Santa Casa de Uruguaiana", 
-                        "Hospital Santa Isabel", 
-                        "Hospital Santo Antonio", 
-                        "Hospital Regional do Oeste", 
-                        "Hospital São José/Sociedade Caritativa Santo Agostinho", 
-                        "Centro de Pesquisas Oncológicas/CEPON", 
-                        "Hospital Governador Celso Ramos", 
-                        "Hospital Carmela Dutra", 
-                        "Hospital Infantil Joana de Gusmão", 
-                        "Hospital Univ. Professor Polydoro Ernani de São Thiago", 
-                        "Hospital e Maternidade Marieta Konder Bornhausen", 
-                        "Hospital São José/Sociedade Divina Providência", 
-                        "Hospital Universitário Santa Terezinha", 
-                        "Hospital Municipal São José", 
-                        "Hospital Materno Infantil Dr. Jesser Amarante Faria", 
-                        "Hospital e Maternidade Tereza Ramos", 
-                        "Hospital de Caridade São Braz de Porto União", 
-                        "Hospital Regional Alto Vale", 
-                        "Hospital e Maternidade Sagrada Família", 
-                        "Hospital Nossa Senhora da Conceição/Sociedade Divina Providência", 
-                        "Hospital de Cirurgia/Fundação de Beneficência Hospital de Cirurgia", 
-                        "Hospital Governador João Alves Filho", 
-                        "Hospital Universitário De Sergipe Huse", 
-                        "Hospital Sagrado Coração de Jesus/Santa Casa de Misericórdia de Araçatuba", 
-                        "Santa Casa de Araraquara", 
-                        "Hospital São Luiz de Araras", 
-                        "Hospital Regional de Assis", 
-                        "Santa Casa de Avaré", 
-                        "Fundação Pio XII Barretos", 
-                        "Hospital Estadual de Bauru", 
-                        "Hospital das Clínicas da Faculdade de Medicina de Botucatu", 
-                        "Hospital Universitário São Francisco na Prov. De Deus", 
-                        "Boldrini Campinas", 
-                        "Hospital e Maternidade Celso Pierro", 
-                        "Hospital das Clínicas da UNICAMP", 
-                        "Hospital Municipal Dr. Mário Gatti", 
-                        "Hospital Padre Albino Catanduva", 
-                        "Hospital Estadual de Diadema – Hospital Serraria", 
-                        "Santa Casa de Franca", 
-                        "Santa Casa de Misericórdia de Guaratinguetá", 
-                        "Hospital Santo Amaro", 
-                        "Santa Casa de Misericórdia de Itapeva", 
-                        "Hospital São Francisco de Assis", 
-                        "Hospital de Amor Jales", 
-                        "Hospital Amaral Carvalho", 
-                        "HCSVP Hospital São Vicente", 
-                        "GRENDACC", 
-                        "Santa Casa de Limeira", 
-                        "Hospital das Clínicas HCFAMEMA", 
-                        "Santa Casa de Marília", 
-                        "Hospital das Clínicas Luzia de Pinho Melo", 
-                        "Hospital Municipal Dr. Tabajara Ramos", 
-                        "Santa Casa de Ourinhos", 
-                        "Hospital Regional Dr. Leopoldo Bevilacqua", 
-                        "Hospital Fornecedores de Cana de Piracicaba", 
-                        "Santa Casa de Piracicaba", 
-                        "Fundação Hospital Regional do Câncer", 
-                        "Hospital Domingos Leonardo Cerávolo Presidente Prudente", 
-                        "Instituto de Radioterapia de Presidente Prudente", 
-                        "Hospital das Clínicas FAEPA", 
-                        "Hospital Imaculada Conceição", 
-                        "Santa Casa de Ribeirão Preto", 
-                        "CTR", 
-                        "Santa Casa de Rio Claro", 
-                        "Hospital Estadual Mário Covas de Santo André", 
-                        "Centro Hospitalar de Santo André Dr. Newton da Costa Brandão", 
-                        "Instituto de Radioterapia do ABC", 
-                        "Santa Casa de Santos", 
-                        "Hospital Santo Antônio Santos", 
-                        "Hospital Guilherme Álvaro", 
-                        "Hospital Anchieta", 
-                        "Hospital Municipal Universitário", 
-                        "Complexo Hospitalar Municipal", 
-                        "Santa Casa de São Carlos", 
-                        "Hospital da Santa Casa de Misericórdia Dona Carolina Malheiros", 
-                        "Santa Casa de Misericórdia de São José do Rio Preto", 
-                        "Hospital de Base de São José do Rio Preto", 
-                        "Hospital Pio XII", 
-                        "Santa Casa de Misericórdia", 
-                        "Centro de Tratamento Fabiana Macedo de Morais", 
-                        "Centro de Referência da Saúde da Mulher", 
-                        "Hospital Geral de Vila Nova Cachoeirinha", 
-                        "Conjunto Hospitalar do Mandaqui", 
-                        "Hosp de Transp. do Estado de SP Eurycles de Jesus Zerbini", 
-                        "HC da FMUSP Hopsital das Clínicas São Paulo", 
-                        "A C Camargo Cancer Center", 
-                        "Hospital Infantil Darcy Vargas UGA III São Paulo", 
-                        "Hospital Heliópolis", 
-                        "Hospital Ipiranga/Unidade de Gestão Assistencial II", 
-                        "Santa Casa de São Paulo Hospital Central São Paulo", 
-                        "Hospital BP/Real e Benemérita Associação Portuguesa de Beneficencia", 
-                        "Hospital Santa Marcelina São Paulo", 
-                        "Hospital São Paulo Hospital de Ensino da UNIFESP", 
-                        "IBCC", 
-                        "Hospital GRAACC Instituto de Oncologia Pediátrica IOP", 
-                        "Instituto do Câncer Arnaldo Vieira de Carvalho", 
-                        "Instituto do Câncer do Estado de São Paulo/SES", 
-                        "Hospital Geral de Vila Penteado Dr Jose Pangella São Paulo", 
-                        "Conjunto Hospitalar de Sorocaba", 
-                        "Santa Casa de Itu", 
-                        "Santa Casa de Sorocaba", 
-                        "Hospital GPACI", 
-                        "Hospital Geral de Pirajussara", 
-                        "Hospital Regional do Vale do Paraíba/Sociedade Beneficente São Camilo", 
-                        "Hospital Municipal Universitário de Taubaté", 
-                        "Santa Casa", 
-                        "Hospital de Regional de Araguaína", 
-                        "Hospital Geral de Palmas", 
-                        "Clínica Irradiar", 
-                        "Hospital Português/Real Sociedade Portuguesa de Beneficiência", 
-                        "Instituto de Radium e Supervoltagem Ivo Roesler/IRSIR", 
-                        "Instituto de Radioterapia Waldemir Miranda LTDA/IRWAM", 
-                        "Clínica de Radioterapia Ingá", 
-                        "Instituto Oncológico LTDA", 
-                        "Irmandade do Senhor Jesus dos Passos e Hospital de Caridade", 
+    ESTABELECIMENTO = c("Hospital da Fundação Hospitalar Estadual do Acre",
+                        "Complexo Hospitalar Manoel André - CHAMA",
+                        "Hospital da Santa Casa de Misericórdia de Maceió",
+                        "Hospital Universitário Alberto Antunes/Universidade Federal de Alagoas",
+                        "Hospital do Açúcar/Fundação da Agro-Indústria de Açúcar e do Álcool de Alagoas- Hospital veredas",
+                        "Hospital de Clínicas Dr. Alberto Lima",
+                        "Hospital da Fundação Centro de Controle de Oncologia/CECON",
+                        "Hospital Universitário Getúlio Vargas",
+                        "Instituto de Mama do Amazonas - SENSUMED",
+                        "Hospital Estadual da Criança",
+                        "Hospital Dom Pedro de Alcântara/Santa Casa de Misericórdia de Feira de Santana",
+                        "Hospital Calixto Midlej Filho",
+                        "Hospital Manoel Novaes",
+                        "Hospital São José Maternidade Santa Helena/Santa Casa de Mis.",
+                        "Hospital Regional de Juazeiro",
+                        "Hospital São Rafael/Fundação Monte Tabor",
+                        "Hospital Professor Edgard Santos/Hospital Universitário MEC - Universidade Federal da Bahia/FAPEX",
+                        "Hospital Aristidez Maltez/Liga Baiana Contra o Câncer",
+                        "Hospital Santa Isabel/Santa Casa de Misericórdia da Bahia",
+                        "Hospital Martagão Gesteira/Liga Álvaro Bahia Contra a Mortalidade Infantil",
+                        "Hospital Geral Roberto Santos",
+                        "Centro Estadual de Oncologia - CICAN",
+                        "Hospital Santo Antônio/Obras Sociais Irmã Dulce",
+                        "Hospital Maternidade Luiz Argolo- Irmandade da Sta Casa de Miser De S Ant de Jesus",
+                        "Hospital Municipal de Teixeira de Freitas/Prefeitura Municipal de T. de Freitas",
+                        "Hospital Geral de Vitória da Conquista",
+                        "Conquista Assistência Medica LTDA/ONCO-MED RAC",
+                        "Serviço de Assistência Médica de Urgencia S. A. (SAMUR)",
+                        "Hospital e Maternidade São Vicente de Paulo",
+                        "Hospital Infantil Albert Sabin",
+                        "Hospital Universitário Walter Cantídio",
+                        "Instituto de Câncer do Ceará",
+                        "Hospital da Irmandade Beneficente Santa Casa de Misericórdia de Fortaleza",
+                        "Hospital Cura D'ars/Beneficência Camiliana",
+                        "HGF- Hospital Geral de Fortaleza/Secretaria de Estado da Saude",
+                        "Hospital Distrital Dr. Fernandes Távora/Instituto Clínico de Fortaleza",
+                        "Centro Regional Integrado de Oncologia/CRIO",
+                        "Hospital da Santa Casa de Misericórdia de Sobral",
+                        "Hospital Universitário de Brasília/Fundação da Universidade de Brasília",
+                        "Hospital Regional de Taguatinga",
+                        "Hospital de Base do Distrito Federal",
+                        "Hospital Regional da Asa Norte",
+                        "Hospital Regional de Ceilândia",
+                        "Hospital Regional do Gama",
+                        "Hospital Regional de Sobradinho",
+                        "Hospital da Criança de Brasília Jose Alencar - HCB",
+                        "Hospital Evangélico de Cachoeiro de Itapemirim",
+                        "Hospital São José",
+                        "Hospital Rio Doce",
+                        "Hospital Evangélico de Vila Velha",
+                        "Hospital Santa Rita de Cássia/Associação Feminina Educacional de Combate ao Câncer",
+                        "Hospital Infantil Nossa Senhora da Glória",
+                        "Hospital da Santa Casa de Misericórdia de Vitória",
+                        "Hospital Universitário Cassiano Antônio de Moraes",
+                        "Hospital Evangélico Anápolis/Fundação James Fanstone",
+                        "Santa Casa de Misericórdia de Anápolis/Fundação de Assistencia Social de Anápolis",
+                        "Hospital Araújo Jorge/Hospital do Câncer/Associação de Combate ao Câncer em Goiás",
+                        "Hospital das Clínicas da Universidade Federal Goiás",
+                        "Hospital da Santa Casa de Misericórdia de Goiânia",
+                        "Hospital Regional de Caxias Dr Everaldo Ferreira Aragão",
+                        "Hospital São Rafael",
+                        "ONCORADIUM",
+                        "Instituto Maranhense de Oncologia Aldenora Belo IMOAB/Fundação Antônio Jorge Dino",
+                        "Hospital Universitário Federal do Maranhão (HUUFM)",
+                        "Hospital Geral Tarquínio Lopes Filho/SES",
+                        "Casa de Caridade de Alfenas Nossa Senhora do Perpétuo Socorro",
+                        "Hospital Ibiapaba S/A",
+                        "Hospital Luxemburgo/Associação dos Amigos do Hospital Mário Penna",
+                        "Hospital da Baleia/Fundação Benjamin Guimarães",
+                        "Hospital Felício Rocho/Fundação Felice Rosso",
+                        "Hospital das Clínicas da UFMG",
+                        "Hospital da Santa Casa de Misericórdia de Belo Horizonte",
+                        "Hospital São Francisco de Assis",
+                        "Hospital Alberto Cavalcanti/Fundação Hospitalar do Estado de Minas Gerais",
+                        "Hospital Professor Osvaldo R. Franco/Prefeitura de Betim/Fundo Municipal de Betim",
+                        "Hospital Imaculada Conceição",
+                        "Hospital São João de Deus/Fundação Geraldo Corrêa",
+                        "Hospital Bom Samaritano/Beneficência Social Bom Samaritano",
+                        "Hospital Márcio Cunha/Fundação São Francisco Xavier",
+                        "Hospital Nossa Senhora das Dores",
+                        "Hospital Manoel Goncalves",
+                        "Hospital Maria José Baeta Reis/ASCOMCER",
+                        "Hospital Dr. João Felício S/A",
+                        "Instituto Oncológico",
+                        "Hospital da Santa Casa de Montes Claros/Irmandade Nossa Senhora das Mercês de Montes Claros",
+                        "Hospital Dílson de Quadros Godinho/Fundação Dílson de Quadros Godinho",
+                        "Hospital do Câncer de Muriaé/Fundação Cristiano Varella",
+                        "Hospital da Santa Casa de Misericórdia de Passos",
+                        "Santa Casa de Misericórdia de Patos de Minas",
+                        "Centro Oncológico AZ/Patos de Minas/MG",
+                        "Hospital Santa Casa de Patrocínio",
+                        "Hospital da Santa Casa de Misericórdia de Poços de Caldas",
+                        "Clínica Memorial",
+                        "Hospital Nossa Senhora das Dores/Irmandade Hospital N. Sra das Dores",
+                        "Hospital das Clinicas Samuel Libânio",
+                        "Instituto Sul Mineiro de Oncologia",
+                        "Hospital da Santa Casa de Misericórdia de São João Del Rei",
+                        "Hospital Nossa Senhora das Graças",
+                        "Hospital Bom Samaritano",
+                        "Hospital Dr. Hélio Angotti/Associação de Combate ao Câncer do Brasil Central",
+                        "Hospital Escola da Universidade Federal do Triângulo Mineiro - Universidade Federal do Triângulo Mineiro",
+                        "Hospital de Clínicas de Uberlândia/Universidade Federal de Uberlândia",
+                        "Hospital e Maternidade Municipal Dr. Odelmo Leão Carneiro",
+                        "Hospital Bom Pastor/Fundação Hospitalar do Município de Varginha",
+                        "Hospital Universitário Maria Aparecida Pedrossian/UFMS",
+                        "Hospital do Câncer Professor Dr. Alfredo Abrão/Fundação Carmem Prudente de Mato Grosso do Sul",
+                        "Hospital Regional de Mato Grosso do Sul/Fundação Serviços de Saúde de Mato Grosso do Sul",
+                        "Hospital da Santa Casa/Associação Beneficente de Campo Grande",
+                        "Santa Casa de Misericórdia de Corumbá/Associação Beneficente de Corumbá",
+                        "Hospital CASSEMS Unidade Dourados",
+                        "Centro de Tratamento de Câncer de Dourados",
+                        "Hospital Nossa Senhora Auxiliadora de Três Lagoas",
+                        "Hospital do Câncer de Mato Grosso/Associação Matogrossense de Combate ao Câncer - AMCC",
+                        "Hospital Geral Universitário/Associação de Proteção a Maternidade e a Infância Cuiabá",
+                        "Hospital da Sociedade Beneficente Santa Casa de Misericórdia de Cuiabá",
+                        "Santa Casa de Misericórdia e Maternidade de Rondonópolis",
+                        "Hospital Santo Antonio/Fundação de Saúde Comunitária de Sinop",
+                        "Hospital Ofir Loyola",
+                        "Hospital Oncológico Infantil Octávio Lobo",
+                        "Hospital Universitário João de Barros Barreto",
+                        "Hospital Regional do Baixo Amazonas Dr. Waldemar Penna",
+                        "Hospital da Fundação Assistência da Paraíba/FAP",
+                        "Hospital Universitário Alcides Carneiro/Universidade Federal de Campina Grande",
+                        "Hospital São Vicente de Paula/Instituto Walfredo Guedes Pereira",
+                        "Hospital Napoleão Laureano",
+                        "Hospital Regional Dep. Janduhy Carneiro",
+                        "Hospital Memorial de Arcoverde",
+                        "Hospital Regional do Agreste Dr. Waldemiro Ferrreira/Fund. Saude Amaury de Medeiros",
+                        "Casa de Saúde e Maternidade Nossa Senhora do Perpétuo Socorro",
+                        "Hospital Dom Tomas",
+                        "Hospital da Fundação de Hematologia e Hemoterapia de Pernambuco/HEMOPE",
+                        "Hospital Universitário Oswaldo Cruz",
+                        "Instituto de Medicina Integral Prof. Fernanda Figueira - IMIP",
+                        "Hospital de Câncer de Pernambuco/Sociedade Pernambucana do Combate ao Câncer",
+                        "Hospital Barão de Lucena/Fundação de Saúde Amaury de Medeiros",
+                        "Hospital das Clínicas/Universidade Federal de Pernambuco",
+                        "Maternidade Dr. Marques Bastos e Hospital Infantil Dr. Mirócles Véras",
+                        "Hospital São Marcos/Sociedade Piauiense Combate ao Câncer",
+                        "Hospital Universitário da Universidade Federal do Piaui",
+                        "ONCOCENTER",
+                        "Hospital da Providência/Província Brasileira da Congregação Irmãs Filhas da Caridade de São Vicente de Paulo",
+                        "Hospital Regional João de Freitas/Associação Norte Paranaense de Combate ao Câncer ao Câncer",
+                        "Hospital Angelina Caron/Sociedade Hospitalar Angelina Caron",
+                        "Hospital São Lucas",
+                        "Hospital do Rocio",
+                        "Hospital Santa Casa de Misericórdia/Associação Beneficiente Hospitalar Santa Casa de Misericórdia",
+                        "CEONC",
+                        "Hospital do Câncer de Cascavel UOPECCAN",
+                        "Hospital de Clínicas/Universidade Federal do Paraná",
+                        "Hospital Infantil Pequeno Príncipe/Associação Hospitalar de Proteção à Infância Dr. Raul Carneiro",
+                        "Hospital Santa Casa/Irmandade da Santa Casa de Misericórdia de Curitiba",
+                        "Hospital Erasto Gaertner/Liga Paranaense de Combate ao Câncer",
+                        "Hospital São Vicente",
+                        "Hospital Universitário Evangélico Mackenzie",
+                        "Clinica RADION",
+                        "Hospital Ministro Costa Cavalcante/Fundação de Saúde Itaiguapy",
+                        "CEONC",
+                        "Hospital de Caridade São Vicente de Paulo",
+                        "Hospital Universitário Regional Norte do Paraná/Universidade Estadual de Londrina",
+                        "Instituto de Câncer de Londrina",
+                        "Hospital e Maternidade Santa Rita",
+                        "Centro de Oncologia e Radioterapia Santana Ltda",
+                        "Hospital do Câncer de Maringá/Instituto de Oncologia e Hematologia Maringá SC Ltda",
+                        "Hospital Policlínica Pato Branco AS",
+                        "Hospital da Santa Casa de Misericórdia de Ponta Grossa",
+                        "Instituto Sul Paranense de Radioterapia",
+                        "UOPECCAN - Filial Umuarama",
+                        "Santa Casa de Misericórdia de Barra Mansa",
+                        "Hospital Santa Isabel",
+                        "Sociedade Portuguesa de Beneficiencia de Campos",
+                        "Hospital Universitário Álvaro Alvim",
+                        "Hospital Dr. Beda",
+                        "Hospital São José do Avaí/Conferência São José do Avaí",
+                        "Hospital Municipal Orêncio de Freitas",
+                        "Hospital Universitário Antônio Pedro - HUAP/UFF",
+                        "Hospital Alcides Carneiro",
+                        "Centro de Terapia Oncológica",
+                        "Hospital Regional Darcy Vargas",
+                        "Hospital dos Servidores do Estado",
+                        "Hospital Geral do Andaraí",
+                        "Hospital Geral de Bonsucesso",
+                        "Hospital Federal Cardoso Fontes",
+                        "Hospital Geral de Ipanema",
+                        "Hospital Geral da Lagoa",
+                        "Hospital Mário Kroeff",
+                        "Hospital Universitário Gaffrée e Guinle",
+                        "Hospital Universitário Pedro Ernesto-HUPE/UERJ",
+                        "Hospital Universitário Clementino Fraga Filho/UFRJ",
+                        "Instituto de Puericultura e Pediatria Martagão Gesteira/UFRJ",
+                        "Hospital Estadual Transplante Câncer e Cirurgia Infantil",
+                        "Instituto Estadual de Hematologia Arthur Siqueira Cavalcanti",
+                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer I",
+                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer II",
+                        "Instituto Nacional de Câncer/INCA - Hospital de Câncer III",
+                        "Hospital São José/Associação Congregação de Santa Catarina",
+                        "Hospital Universitário de Vassouras",
+                        "Hospital Jardim Amália Ltda - HINJA",
+                        "Hospital da LMECC",
+                        "Hospital Wilson Rosado",
+                        "Hospital Dr. Luiz Antônio/Liga Norteriograndense Contra o Câncer",
+                        "Hospital Infantil Varela Santiago",
+                        "Hospital Rio Grande",
+                        "Hospital do Coração de Natal Ltda",
+                        "Hospital Universitário Onofre Lopes - HUOL",
+                        "Hospital Regional de Cacoal - HRC",
+                        "Hospital de Base Dr. Ary Pinheiro/Hospital de Base Porto Velho",
+                        "Instituto de Oncologia e Radioterapia São Pellegrino",
+                        "Hospital de Amor da Amazônia",
+                        "Hospital Geral de Roraima/HGR",
+                        "Santa Casa de Caridade de Bagé",
+                        "Hospital Tacchini",
+                        "Hospital Caridade Beneficência Cachoeira do Sul",
+                        "Hospital Nossa Senhora das Graças",
+                        "Hospital de Caridade e Beneficência",
+                        "Hospital Geral/Fundação UCS Hospital Geral de Caxias do Sul",
+                        "Hospital Pompéia",
+                        "Hospital São Vicente de Paulo/Associação das Damas de Caridade",
+                        "Hospital da Fundação Hospitalar Santa Terezinha de Erechim",
+                        "Hospital da Associação Hospital de Caridade de Ijuí",
+                        "Hospital Bruno Born",
+                        "Hospital São Vicente de Paulo",
+                        "Hospital de Clínicas de Passo Fundo",
+                        "Hospital Escola da UFPEL",
+                        "Hospital da Santa Casa de Misericórdia de Pelotas",
+                        "Hospital de Clínicas de Porto Alegre",
+                        "Hospital São Lucas da PUCRS",
+                        "Hospital Fêmina S/A",
+                        "Hospital da Santa Casa de Misericórdia de Porto Alegre",
+                        "Hospital Nossa Senhora da Conceição S/A",
+                        "Santa Casa do Rio Grande",
+                        "Hospital Ana Nery",
+                        "Hospital Universitário de Santa Maria",
+                        "Hospital Vida Saúde",
+                        "Hospital de Caridade de Santiago",
+                        "Hospital Santo Angelo",
+                        "Hospital Ivan Goulart",
+                        "Santa Casa de São Gabriel",
+                        "Hospital Centenário",
+                        "Hospital Bom Jesus",
+                        "Santa Casa de Uruguaiana",
+                        "Hospital Santa Isabel",
+                        "Hospital Santo Antonio",
+                        "Hospital Regional do Oeste",
+                        "Hospital São José/Sociedade Caritativa Santo Agostinho",
+                        "Centro de Pesquisas Oncológicas/CEPON",
+                        "Hospital Governador Celso Ramos",
+                        "Hospital Carmela Dutra",
+                        "Hospital Infantil Joana de Gusmão",
+                        "Hospital Univ. Professor Polydoro Ernani de São Thiago",
+                        "Hospital e Maternidade Marieta Konder Bornhausen",
+                        "Hospital São José/Sociedade Divina Providência",
+                        "Hospital Universitário Santa Terezinha",
+                        "Hospital Municipal São José",
+                        "Hospital Materno Infantil Dr. Jesser Amarante Faria",
+                        "Hospital e Maternidade Tereza Ramos",
+                        "Hospital de Caridade São Braz de Porto União",
+                        "Hospital Regional Alto Vale",
+                        "Hospital e Maternidade Sagrada Família",
+                        "Hospital Nossa Senhora da Conceição/Sociedade Divina Providência",
+                        "Hospital de Cirurgia/Fundação de Beneficência Hospital de Cirurgia",
+                        "Hospital Governador João Alves Filho",
+                        "Hospital Universitário De Sergipe Huse",
+                        "Hospital Sagrado Coração de Jesus/Santa Casa de Misericórdia de Araçatuba",
+                        "Santa Casa de Araraquara",
+                        "Hospital São Luiz de Araras",
+                        "Hospital Regional de Assis",
+                        "Santa Casa de Avaré",
+                        "Fundação Pio XII Barretos",
+                        "Hospital Estadual de Bauru",
+                        "Hospital das Clínicas da Faculdade de Medicina de Botucatu",
+                        "Hospital Universitário São Francisco na Prov. De Deus",
+                        "Boldrini Campinas",
+                        "Hospital e Maternidade Celso Pierro",
+                        "Hospital das Clínicas da UNICAMP",
+                        "Hospital Municipal Dr. Mário Gatti",
+                        "Hospital Padre Albino Catanduva",
+                        "Hospital Estadual de Diadema – Hospital Serraria",
+                        "Santa Casa de Franca",
+                        "Santa Casa de Misericórdia de Guaratinguetá",
+                        "Hospital Santo Amaro",
+                        "Santa Casa de Misericórdia de Itapeva",
+                        "Hospital São Francisco de Assis",
+                        "Hospital de Amor Jales",
+                        "Hospital Amaral Carvalho",
+                        "HCSVP Hospital São Vicente",
+                        "GRENDACC",
+                        "Santa Casa de Limeira",
+                        "Hospital das Clínicas HCFAMEMA",
+                        "Santa Casa de Marília",
+                        "Hospital das Clínicas Luzia de Pinho Melo",
+                        "Hospital Municipal Dr. Tabajara Ramos",
+                        "Santa Casa de Ourinhos",
+                        "Hospital Regional Dr. Leopoldo Bevilacqua",
+                        "Hospital Fornecedores de Cana de Piracicaba",
+                        "Santa Casa de Piracicaba",
+                        "Fundação Hospital Regional do Câncer",
+                        "Hospital Domingos Leonardo Cerávolo Presidente Prudente",
+                        "Instituto de Radioterapia de Presidente Prudente",
+                        "Hospital das Clínicas FAEPA",
+                        "Hospital Imaculada Conceição",
+                        "Santa Casa de Ribeirão Preto",
+                        "CTR",
+                        "Santa Casa de Rio Claro",
+                        "Hospital Estadual Mário Covas de Santo André",
+                        "Centro Hospitalar de Santo André Dr. Newton da Costa Brandão",
+                        "Instituto de Radioterapia do ABC",
+                        "Santa Casa de Santos",
+                        "Hospital Santo Antônio Santos",
+                        "Hospital Guilherme Álvaro",
+                        "Hospital Anchieta",
+                        "Hospital Municipal Universitário",
+                        "Complexo Hospitalar Municipal",
+                        "Santa Casa de São Carlos",
+                        "Hospital da Santa Casa de Misericórdia Dona Carolina Malheiros",
+                        "Santa Casa de Misericórdia de São José do Rio Preto",
+                        "Hospital de Base de São José do Rio Preto",
+                        "Hospital Pio XII",
+                        "Santa Casa de Misericórdia",
+                        "Centro de Tratamento Fabiana Macedo de Morais",
+                        "Centro de Referência da Saúde da Mulher",
+                        "Hospital Geral de Vila Nova Cachoeirinha",
+                        "Conjunto Hospitalar do Mandaqui",
+                        "Hosp de Transp. do Estado de SP Eurycles de Jesus Zerbini",
+                        "HC da FMUSP Hopsital das Clínicas São Paulo",
+                        "A C Camargo Cancer Center",
+                        "Hospital Infantil Darcy Vargas UGA III São Paulo",
+                        "Hospital Heliópolis",
+                        "Hospital Ipiranga/Unidade de Gestão Assistencial II",
+                        "Santa Casa de São Paulo Hospital Central São Paulo",
+                        "Hospital BP/Real e Benemérita Associação Portuguesa de Beneficencia",
+                        "Hospital Santa Marcelina São Paulo",
+                        "Hospital São Paulo Hospital de Ensino da UNIFESP",
+                        "IBCC",
+                        "Hospital GRAACC Instituto de Oncologia Pediátrica IOP",
+                        "Instituto do Câncer Arnaldo Vieira de Carvalho",
+                        "Instituto do Câncer do Estado de São Paulo/SES",
+                        "Hospital Geral de Vila Penteado Dr Jose Pangella São Paulo",
+                        "Conjunto Hospitalar de Sorocaba",
+                        "Santa Casa de Itu",
+                        "Santa Casa de Sorocaba",
+                        "Hospital GPACI",
+                        "Hospital Geral de Pirajussara",
+                        "Hospital Regional do Vale do Paraíba/Sociedade Beneficente São Camilo",
+                        "Hospital Municipal Universitário de Taubaté",
+                        "Santa Casa",
+                        "Hospital de Regional de Araguaína",
+                        "Hospital Geral de Palmas",
+                        "Clínica Irradiar",
+                        "Hospital Português/Real Sociedade Portuguesa de Beneficiência",
+                        "Instituto de Radium e Supervoltagem Ivo Roesler/IRSIR",
+                        "Instituto de Radioterapia Waldemir Miranda LTDA/IRWAM",
+                        "Clínica de Radioterapia Ingá",
+                        "Instituto Oncológico LTDA",
+                        "Irmandade do Senhor Jesus dos Passos e Hospital de Caridade",
                         "Instituto de Radioterapia Vale do Paraíba/CENON - Centro de Oncologia Radioterápica do Vale do Paraíba")
   )
-  
+
   # Verifica se a coluna codigo_CNES existe antes de tentar acessá-la
   if ("CNES_Hospital" %in% names(dados)) {
     message("Mapeando os códigos CNES para nomes completos dos estabelecimentos.")
@@ -1874,8 +1881,8 @@ renomear_CNES <- function(dados) {
   } else {
     message("A coluna 'CNES_Hospital' não foi encontrada no dataframe.")
   }
-  
-  message("Ajuste dos códigos CNES concluído com sucesso. Foi criada uma coluna no final do dataframe, chamada Estabelecimento_Hospitalar.")
+
+  message("Ajuste dos códigos CNES concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Estabelecimento_Hospitalar.")
   return(dados)
 }
 
@@ -1895,13 +1902,13 @@ renomear_CNES <- function(dados) {
 #' @return Retorna um dataframe com os nomes completos dos tipos histológicos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_tipo_histologico
-#' @examples 
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como: 
-#' 
+#' @examples
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
+#'
 #' dados_RHC_combinados <- renomear_tipo_histologico(dados_RHC_combinados)
 renomear_tipo_histologico <- function(dados) {
   message("Iniciando o ajuste dos códigos de Tipo Histológico para nomes completos.")
-  
+
   # Definição do dataframe de mapeamento de Tipo Histológico para nomes completos
   tipo_histologico_names <- data.frame(
     Codigo_tipo_hist = c(
@@ -1910,105 +1917,105 @@ renomear_tipo_histologico <- function(dados) {
       "8030/3", "8031/3", "8032/3", "8033/3", "8034/3", "8040/1", "8041/3", "8042/3", "8043/3", "8044/3",
       "8045/3", "8050/0", "8050/2", "8050/3", "8051/0", "8051/3", "8052/0", "8052/3", "8053/0", "8060/0",
       "8070/2", "8070/3", "8070/6", "8071/3", "8072/3", "8073/3", "8074/3", "8075/3", "8076/2", "8076/3",
-      
+
       "8077/2", "8080/2", "8081/2", "8082/3", "8090/1", "8090/3", "8091/3", "8092/3", "8093/3", "8094/3",
       "8095/3", "8096/0", "8100/0", "8101/0", "8102/0", "8110/0", "8110/3", "8120/0", "8120/1", "8120/2",
       "8120/3", "8121/0", "8121/1", "8121/3", "8122/3", "8123/3", "8124/3", "8130/3", "8140/0", "8140/1",
       "8140/2", "8140/3", "8140/6", "8141/3", "8142/3", "8143/3", "8144/3", "8145/3", "8146/0", "8147/0",
       "8147/3", "8150/0", "8150/3", "8151/0", "8151/3", "8152/0", "8152/3", "8153/1", "8153/3", "8154/3",
-      
+
       "8155/3", "8160/0", "8160/3", "8161/0", "8161/3", "8162/3", "8170/0", "8170/3", "8171/3", "8180/3",
       "8190/0", "8190/3", "8191/0", "8200/0", "8200/3", "8201/3", "8202/0", "8210/0", "8210/2", "8210/3",
       "8211/0", "8211/3", "8220/0", "8220/3", "8221/0", "8221/3", "8230/3", "8231/3", "8240/1", "8240/3",
       "8241/1", "8241/3", "8243/3", "8244/3", "8245/3", "8246/3", "8247/3", "8248/1", "8250/1", "8250/3",
       "8251/0", "8251/3", "8260/0", "8260/3", "8261/1", "8261/2", "8261/3", "8262/3", "8263/0", "8263/2",
-      
+
       "8263/3", "8270/0", "8270/3", "8271/0", "8280/0", "8280/3", "8281/0", "8281/3", "8290/0", "8290/3",
       "8300/0", "8300/3", "8310/0", "8310/3", "8311/1", "8312/3", "8313/0", "8314/3", "8315/3", "8320/3",
       "8321/0", "8322/0", "8322/3", "8323/0", "8323/3", "8324/0", "8330/0", "8330/3", "8331/3", "8332/3",
       "8333/0", "8334/0", "8340/3", "8350/3", "8360/1", "8361/1", "8370/0", "8370/3", "8371/0", "8372/0",
       "8373/0", "8374/0", "8375/0", "8380/0", "8380/1", "8380/3", "8381/0", "8381/1", "8381/3", "8390/0",
-      
+
       "8390/3", "8400/0", "8400/1", "8400/3", "8401/0", "8401/3", "8402/0", "8403/0", "8404/0", "8405/0",
       "8406/0", "8407/0", "8408/0", "8410/0", "8410/3", "8420/0", "8420/3", "8430/1", "8430/3", "8440/0",
       "8440/3", "8441/0", "8441/3", "8442/3", "8450/0", "8450/3", "8451/3", "8452/1", "8460/0", "8460/3",
       "8461/0", "8461/3", "8462/3", "8470/0", "8470/3", "8471/0", "8471/3", "8472/3", "8473/3", "8480/0",
       "8480/3", "8480/6", "8481/3", "8490/3", "8490/6", "8500/2", "8500/3", "8501/2", "8501/3", "8502/3",
-      
+
       "8503/0", "8503/2", "8503/3", "8504/0", "8504/2", "8504/3", "8505/0", "8506/0", "8510/3", "8511/3",
       "8512/3", "8520/2", "8520/3", "8521/3", "8522/2", "8522/3", "8530/3", "8540/3", "8541/3", "8542/3",
       "8543/3", "8550/0", "8550/1", "8551/0", "8560/3", "8561/0", "8562/3", "8570/3", "8571/3", "8572/3",
       "8573/3", "8580/0", "8580/3", "8590/1", "8600/0", "8600/3", "8601/3", "8602/0", "8610/0", "8620/1",
       "8620/3", "8621/1", "8622/1", "8623/1", "8630/0", "8630/1", "8630/3", "8631/0", "8632/1", "8640/0",
-      
+
       "8640/3", "8641/0", "8650/0", "8650/1", "8650/3", "8660/0", "8670/0", "8671/0", "8680/1", "8680/3",
       "8681/1", "8682/1", "8683/0", "8690/1", "8691/1", "8692/1", "8693/1", "8693/3", "8700/0", "8700/3",
       "8710/3", "8711/0", "8712/3", "8713/0", "8720/0", "8720/2", "8720/3", "8721/3", "8722/0", "8722/3",
       "8723/0", "8723/3", "8724/0", "8725/0", "8726/0", "8727/0", "8730/0", "8730/3", "8740/0", "8740/3",
       "8741/2", "8741/3", "8742/2", "8742/3", "8743/3", "8744/3", "8745/3", "8750/0", "8760/0", "8761/1",
-      
+
       "8761/3", "8770/0", "8770/3", "8771/0", "8771/3", "8772/0", "8772/3", "8773/3", "8774/3", "8780/0",
       "8780/3", "8790/0", "8800/0", "8800/3", "8800/6", "8801/3", "8802/3", "8803/3", "8804/3", "8810/0",
       "8810/3", "8811/0", "8811/3", "8812/0", "8812/3", "8813/0", "8813/3", "8814/3", "8820/0", "8821/1",
       "8822/1", "8823/1", "8824/1", "8830/0", "8830/1", "8830/3", "8832/0", "8832/3", "8833/3", "8840/0",
       "8840/3", "8841/1", "8850/0", "8850/3", "8851/0", "8851/3", "8852/0", "8852/3", "8853/3", "8854/0",
-      
+
       "8854/3", "8855/3", "8856/0", "8857/0", "8858/3", "8860/0", "8861/0", "8870/0", "8880/0", "8881/0",
       "8890/0", "8890/1", "8890/3", "8891/0", "8892/0", "8893/0", "8894/0", "8894/3", "8895/0", "8895/3",
       "8896/3", "8897/1", "8900/0", "8900/3", "8901/3", "8902/3", "8903/0", "8904/0", "8910/3", "8920/3",
       "8930/0", "8930/3", "8931/1", "8932/0", "8933/3", "8940/0", "8940/3", "8941/3", "8950/3", "8951/3",
       "8960/1", "8960/3", "8963/3", "8964/3", "8970/3", "8971/3", "8972/3", "8980/3", "8981/3", "8982/0",
-      
+
       "8990/0", "8990/1", "8990/3", "8991/3", "9000/0", "9000/1", "9000/3", "9010/0", "9011/0", "9012/0",
       "9013/0", "9014/0", "9015/0", "9016/0", "9020/0", "9020/1", "9020/3", "9030/3", "9040/0", "9040/3",
       "9041/3", "9042/3", "9043/3", "9044/3", "9050/0", "9050/3", "9051/0", "9051/3", "9052/0", "9052/3",
       "9053/0", "9053/3", "9054/0", "9055/1", "9060/3", "9061/3", "9062/3", "9063/3", "9064/3", "9070/3",
       "9071/3", "9072/3", "9073/1", "9080/0", "9080/1", "9080/3", "9081/3", "9082/3", "9083/3", "9084/0",
-      
+
       "9084/3", "9085/3", "9090/0", "9090/3", "9091/1", "9100/0", "9100/1", "9100/3", "9101/3", "9102/3",
       "9103/0", "9104/1", "9110/0", "9110/1", "9110/3", "9120/0", "9120/3", "9121/0", "9122/0", "9123/0",
       "9124/3", "9125/0", "9126/0", "9130/0", "9130/1", "9130/3", "9131/0", "9132/0", "9133/1", "9133/3",
       "9134/1", "9140/3", "9141/0", "9142/0", "9150/0", "9150/1", "9150/3", "9160/0", "9161/1", "9170/0",
       "9170/3", "9171/0", "9172/0", "9173/0", "9174/0", "9174/1", "9175/0", "9180/0", "9180/3", "9181/3",
-      
+
       "9182/3", "9183/3", "9184/3", "9185/3", "9190/3", "9191/0", "9200/0", "9200/1", "9210/0", "9210/1",
       "9220/0", "9220/1", "9220/3", "9221/0", "9221/3", "9230/0", "9230/3", "9231/3", "9240/3", "9241/0",
       "9250/1", "9250/3", "9251/1", "9251/3", "9260/3", "9261/3", "9262/0", "9270/0", "9270/1", "9270/3",
       "9271/0", "9272/0", "9273/0", "9274/0", "9275/0", "9280/0", "9281/0", "9282/0", "9290/0", "9290/3",
       "9300/0", "9301/0", "9302/0", "9310/0", "9310/3", "9311/0", "9312/0", "9320/0", "9321/0", "9322/0",
-      
+
       "9330/0", "9330/3", "9340/3", "9350/1", "9360/1", "9361/1", "9362/3", "9363/0", "9364/3", "9370/0",
       "9380/3", "9381/3", "9382/3", "9383/1", "9384/1", "9390/0", "9390/3", "9391/3", "9392/3", "9393/1",
       "9394/1", "9400/3", "9401/3", "9410/3", "9411/3", "9420/3", "9421/3", "9422/3", "9423/3", "9424/3",
       "9430/0", "9440/3", "9441/3", "9442/3", "9443/3", "9450/3", "9451/3", "9460/3", "9470/3", "9471/3",
       "9472/3", "9473/3", "9480/3", "9481/3", "9490/0", "9490/3", "9491/3", "9500/3", "9501/3", "9502/3",
-      
+
       "9503/3", "9504/3", "9505/1", "9506/0", "9507/0", "9510/3", "9511/3", "9512/3", "9520/3", "9521/3",
       "9522/3", "9523/3", "9530/0", "9530/1", "9530/3", "9531/0", "9532/0", "9533/0", "9534/0", "9535/0",
       "9536/0", "9537/0", "9538/1", "9539/3", "9540/0", "9540/1", "9540/3", "9541/0", "9550/0", "9560/0",
       "9560/1", "9560/3", "9561/3", "9562/0", "9570/0", "9580/0", "9580/3", "9581/3", "9590/3", "9591/3",
       "9592/3", "9593/3", "9594/3", "9595/3", "9650/3", "9652/3", "9653/3", "9654/3", "9655/3", "9657/3",
-      
+
       "9658/3", "9659/3", "9660/3", "9661/3", "9662/3", "9663/3", "9664/3", "9665/3", "9666/3", "9667/3",
       "9670/3", "9671/3", "9672/3", "9673/3", "9674/3", "9675/3", "9676/3", "9677/3", "9680/3", "9681/3",
       "9682/3", "9683/3", "9684/3", "9685/3", "9686/3", "9687/3", "9690/3", "9691/3", "9692/3", "9693/3",
       "9694/3", "9695/3", "9696/3", "9697/3", "9698/3", "9700/3", "9701/3", "9702/3", "9703/3", "9704/3",
       "9705/3", "9706/3", "9707/3", "9709/3", "9711/3", "9712/3", "9713/3", "9714/3", "9720/3", "9722/3",
-      
+
       "9723/3", "9731/3", "9732/3", "9740/1", "9740/3", "9741/3", "9760/3", "9761/3", "9762/3", "9763/3",
       "9764/3", "9765/1", "9766/1", "9767/1", "9768/1", "9800/3", "9801/3", "9802/3", "9803/3", "9804/3",
       "9820/3", "9821/3", "9822/3", "9823/3", "9824/3", "9825/3", "9826/3", "9827/3", "9830/3", "9840/3",
       "9841/3", "9842/3", "9850/3", "9860/3", "9861/3", "9862/3", "9863/3", "9864/3", "9866/3", "9867/3",
       "9868/3", "9870/3", "9880/3", "9890/3", "9891/3", "9892/3", "9893/3", "9894/3", "9900/3", "9910/3",
-      
+
       "9930/3", "9931/3", "9932/3", "9940/3", "9941/3", "9950/1", "9960/1", "9961/3", "9962/1", "9970/1",
       "9980/1", "9981/1", "9982/1", "9983/1", "9984/1", "9989/1",
-      "8000/9",	"8005/3",	"8010/9",	"8013/3",	"8014/3",	"8015/3",	"8035/3",	"8046/3",	"8052/2",	"8078/3",	"8083/3",	"8084/3",	"8097/3",	"8098/3",	"8102/3",	"8130/1",	"8130/2",	"8131/3",	"8148/2",	"8150/1",	"8156/1",	"8172/3",	"8173/3",	"8174/3",	"8175/3",	"8201/2",	"8214/3",	"8215/3",	"8230/2",	"8242/1",	"8242/3",	"8245/1",	"8249/3",	"8252/3",	"8253/3",	"8254/3",	"8255/3",	"8272/3",	"8313/3",	"8316/3",	"8317/3",	"8318/3",	"8319/3",	"8330/1",	"8333/3",	"8335/3",	"8337/3",	"8341/3",	"8342/3",	"8343/3",	"8344/3",	"8345/3",	"8346/3",	"8347/3",	"8382/3",	"8383/3",	"8384/3",	"8402/3",	"8403/3",	"8407/3",	"8408/3",	"8409/3",	"8413/3",	"8442/1",	"8444/1",	"8451/1",	"8452/3",	"8453/1",	"8453/2",	"8453/3",	"8462/1",	"8463/1",	"8470/2",	"8472/1",	"8473/1",	"8482/3",	"8507/2",	"8508/3",	"8513/3",	"8514/3",	"8523/3",	"8524/3",	"8525/3",	"8550/3",	"8551/3",	"8574/3",	"8575/3",	"8576/3",	"8580/1",	"8581/1",	"8581/3",	"8582/1",	"8582/3",	"8583/1",	"8583/3",	"8584/1",	"8584/3",	"8585/1",	"8585/3",	"8586/3",	"8588/3",	"8589/3",	"8591/1",	"8592/1",	"8593/1",	"8631/1",	"8631/3",	"8633/1",	"8634/3",	"8640/1",	"8642/1",	"8670/3",	"8711/3",	"8728/3",	"8744/2",	"8746/3",	
-      "8800/9",	"8805/3",	"8806/3",	"8810/1",	"8815/3",	"8825/1",	"8825/3",	"8835/1",	"8836/1",	"8850/1",	"8888/8",	"8891/3",	"8898/1",	"8912/3",	"8921/3",	"8931/3",	"8934/3",	"8935/1",	"8935/3",	"8936/1",	"8936/3",	"8959/1",	"8959/3",	"8973/3",	"8974/1",	"8982/3",	"9014/1",	"9014/3",	"9015/1",	"9015/3",	"9064/2",	"9065/3",	"9105/3",	"9186/3",	"9187/3",	"9192/3",	"9193/3",	"9194/3",	"9242/3",	"9243/3",	"9252/3",	"9351/1",	"9352/1",	"9365/3",	"9370/3",	"9371/3",	"9372/3",	"9390/1",	"9393/3",	"9412/1",	"9413/0",	"9421/1",	"9430/3",	"9442/1",	"9444/1",	"9474/3",	"9505/3",	"9506/1",	"9508/3",	"9513/3",	"9538/3",	"9539/1",	"9571/3",	"9596/3",	"9651/3",	"9678/3",	"9679/3",	"9689/3",	"9699/3",	"9708/3",	"9716/3",	"9717/3",	"9718/3",	"9719/3",	"9727/3",	"9728/3",	"9729/3",	"9733/3",	"9734/3",	"9742/3",	"9750/3",	"9751/1",	"9751/3",	"9752/1",	"9753/1",	"9754/3",	"9755/3",	"9756/3",	"9757/3",	"9758/3",	"9769/1",	"9805/3",	"9831/1",	"9832/3",	"9833/3",	"9834/3",	"9835/3",	"9836/3",	"9837/3",	"9871/3",	"9872/3",	"9873/3",	"9874/3",	"9875/3",	"9876/3",	"9895/3",	"9896/3",	"9897/3",	"9920/3",	"9945/3",	"9946/3",	"9948/3",	"9950/3",	"9960/3",	"9962/3",	"9963/3",	
+      "8000/9",	"8005/3",	"8010/9",	"8013/3",	"8014/3",	"8015/3",	"8035/3",	"8046/3",	"8052/2",	"8078/3",	"8083/3",	"8084/3",	"8097/3",	"8098/3",	"8102/3",	"8130/1",	"8130/2",	"8131/3",	"8148/2",	"8150/1",	"8156/1",	"8172/3",	"8173/3",	"8174/3",	"8175/3",	"8201/2",	"8214/3",	"8215/3",	"8230/2",	"8242/1",	"8242/3",	"8245/1",	"8249/3",	"8252/3",	"8253/3",	"8254/3",	"8255/3",	"8272/3",	"8313/3",	"8316/3",	"8317/3",	"8318/3",	"8319/3",	"8330/1",	"8333/3",	"8335/3",	"8337/3",	"8341/3",	"8342/3",	"8343/3",	"8344/3",	"8345/3",	"8346/3",	"8347/3",	"8382/3",	"8383/3",	"8384/3",	"8402/3",	"8403/3",	"8407/3",	"8408/3",	"8409/3",	"8413/3",	"8442/1",	"8444/1",	"8451/1",	"8452/3",	"8453/1",	"8453/2",	"8453/3",	"8462/1",	"8463/1",	"8470/2",	"8472/1",	"8473/1",	"8482/3",	"8507/2",	"8508/3",	"8513/3",	"8514/3",	"8523/3",	"8524/3",	"8525/3",	"8550/3",	"8551/3",	"8574/3",	"8575/3",	"8576/3",	"8580/1",	"8581/1",	"8581/3",	"8582/1",	"8582/3",	"8583/1",	"8583/3",	"8584/1",	"8584/3",	"8585/1",	"8585/3",	"8586/3",	"8588/3",	"8589/3",	"8591/1",	"8592/1",	"8593/1",	"8631/1",	"8631/3",	"8633/1",	"8634/3",	"8640/1",	"8642/1",	"8670/3",	"8711/3",	"8728/3",	"8744/2",	"8746/3",
+      "8800/9",	"8805/3",	"8806/3",	"8810/1",	"8815/3",	"8825/1",	"8825/3",	"8835/1",	"8836/1",	"8850/1",	"8888/8",	"8891/3",	"8898/1",	"8912/3",	"8921/3",	"8931/3",	"8934/3",	"8935/1",	"8935/3",	"8936/1",	"8936/3",	"8959/1",	"8959/3",	"8973/3",	"8974/1",	"8982/3",	"9014/1",	"9014/3",	"9015/1",	"9015/3",	"9064/2",	"9065/3",	"9105/3",	"9186/3",	"9187/3",	"9192/3",	"9193/3",	"9194/3",	"9242/3",	"9243/3",	"9252/3",	"9351/1",	"9352/1",	"9365/3",	"9370/3",	"9371/3",	"9372/3",	"9390/1",	"9393/3",	"9412/1",	"9413/0",	"9421/1",	"9430/3",	"9442/1",	"9444/1",	"9474/3",	"9505/3",	"9506/1",	"9508/3",	"9513/3",	"9538/3",	"9539/1",	"9571/3",	"9596/3",	"9651/3",	"9678/3",	"9679/3",	"9689/3",	"9699/3",	"9708/3",	"9716/3",	"9717/3",	"9718/3",	"9719/3",	"9727/3",	"9728/3",	"9729/3",	"9733/3",	"9734/3",	"9742/3",	"9750/3",	"9751/1",	"9751/3",	"9752/1",	"9753/1",	"9754/3",	"9755/3",	"9756/3",	"9757/3",	"9758/3",	"9769/1",	"9805/3",	"9831/1",	"9832/3",	"9833/3",	"9834/3",	"9835/3",	"9836/3",	"9837/3",	"9871/3",	"9872/3",	"9873/3",	"9874/3",	"9875/3",	"9876/3",	"9895/3",	"9896/3",	"9897/3",	"9920/3",	"9945/3",	"9946/3",	"9948/3",	"9950/3",	"9960/3",	"9962/3",	"9963/3",
       "9964/3",	"9975/1",	"9980/3",	"9982/3",	"9983/3",	"9984/3",	"9985/3",	"9986/3",	"9987/3",	"9989/3",	"9990/3",
       "8000/0",	"8005/0",	"8152/1",	"8156/3",	"8272/0",	"8313/1",	"8408/1",	"8634/1",	"8728/1",	"8762/1",	"8825/0",	"8827/1",	"8834/1",	"8857/3",	"8936/0",	"9135/1",	"9136/1",	"9195/3",	"9342/3",	"9491/0",	"9571/0",	"9715/3",	"9961/1",	"9990/1",	"9990/9"
-      
-      
+
+
     ),
     Tipo_Histologico_Completo = c(
       "Neoplasia benigna", "Neoplasia de comportamento incerto se benigno ou maligno", "Neoplasia maligna", "Neoplasia metastática",
@@ -2024,7 +2031,7 @@ renomear_tipo_histologico <- function(dados) {
       "Carcinoma de células escamosas, de células grandes, não queratinizado", "Carcinoma de células escamosas, de células pequenas, não queratinizado",
       "Carcinoma de células escamosas, de células fusiformes", "Carcinoma de células escamosas adenóides", "Carcinoma in situ de células escamosas com invasão questionável do estroma",
       "Carcinoma de células escamosas, microinvasivo", "Neoplasia intra-epitelial, grau III, de colo uterino, vulva e vagina", "Eritroplasia de Queyrat",
-      
+
       "Doença de Bowen", "Carcinoma linfoepitelial", "Tumor de células basais", "Carcinoma de células basais SOE", "Carcinoma de células basais, multicêntrico",
       "Carcinoma de células basais, tipo morféia", "Carcinoma de células basais, fibroepitelial", "Carcinoma basoescamoso", "Carcinoma metatípico",
       "Epitelioma intra-epidérmico de Jadassohn", "Tricoepitelioma", "Tricofoliculoma", "Tricolemoma", "Pilomatrixoma SOE", "Carcinoma da pilomátrix",
@@ -2035,7 +2042,7 @@ renomear_tipo_histologico <- function(dados) {
       "Adenocarcionama, tipo intestinal", "Carcinoma, tipo difuso", "Adenoma monomórfico", "Adenoma de células basais", "Adenocarcinoma de células basais",
       "Adenoma de células das ilhotas", "Carcinoma de células das ilhotas", "Insulinoma SOE", "Insulinoma maligno", "Glucagonoma SOE", "Glucagonoma maligno",
       "Gastrinoma SOE", "Gastrinoma maligno", "Adenocarcinoma misto, das ilhotas e exócrino", "Vipoma",
-      
+
       "Adenoma de duto biliar", "Colangiocarcinoma", "Cistadenoma de dutos biliares", "Cistadenocarcinoma de dutos biliares", "Tumor de Klatskin",
       "Adenoma de células hepáticas", "Carcinoma hepatocelular SOE", "Carcinoma hepatocelular fibrolamelar", "Carcinoma hepatocelular e colangiocarcinoma combinados",
       "Adenoma trabecular", "Adenocarcinoma trabecular", "Adenoma embrionário", "Cilindroma dérmico écrino", "Carcinoma cístico adenóide", "Carcinoma cribriforme",
@@ -2047,7 +2054,7 @@ renomear_tipo_histologico <- function(dados) {
       "Adenomatose pulmonar", "Adenocarcinoma bronquíolo-alveolar", "Adenoma alveolar", "Adenocarcinoma alveolar", "Adenoma papilar SOE", "Adenocarcinoma papilar SOE",
       "Adenoma viloso SOE", "Adenocarcinoma in situ em adenoma viloso", "Adenocarcinoma em adenoma viloso", "Adenocarcinoma viloso", "Adenoma tubuloviloso SOE",
       "Adenocarcinoma in situ em adenoma tubuloviloso", "Adenocarcinoma em adenoma tubuloviloso", "Adenoma cromófobo", "Carcinoma cromófobo",
-      
+
       "Prolactinoma", "Adenoma acidófilo", "Carcinoma acidófilo", "Adenoma misto acidófilo-basófilo", "Carcinoma misto acidófilo-basófilo", "Adenoma oxifílico",
       "Adenocarcinoma oxifílico", "Adenoma basófilo", "Carcinoma basófilo", "Adenoma de células claras", "Adenocarcinoma de células claras SOE", "Tumor hipernefróide",
       "Carcinoma de células renais", "Adenofibroma de células claras", "Carcinoma rico em lípides", "Carcinoma rico em glicogênio", "Carcinoma de células granulares",
@@ -2059,7 +2066,7 @@ renomear_tipo_histologico <- function(dados) {
       "Adenoma de córtex supra-renal, de células mistas", "Adenoma endometrióide SOE", "Adenoma endometrióide 'borderline'", "Carcinoma endometrióide",
       "Adenofibroma endometrióide SOE", "Adenofibroma endometrióide 'borderline'", "Adenofibroma endometróide maligno", "Adenoma de apêndice cutâneo", "Carcinoma de apêndice cutâneo",
       "Adenoma de glândula sudorípara", "Tumor de glândula sudorípara SOE",
-      
+
       "Adenocarcinoma de glândula sudorípara", "Adenoma apócrino", "Adenocarcinoma apócrino", "Acrospiroma écrino", "Espiradenoma écrino", "Hidrocistoma",
       "Hidradenoma papilar", "Siringadenoma papilar", "Siringoma SOE", "Adenoma papilar écrino", "Adenoma sebáceo", "Adenocarcinoma sebáceo", "Adenoma ceruminoso",
       "Adenocarcinoma ceruminoso", "Tumor mucoepidermóide", "Carcinoma mucoepidermóide", "Cistadenoma SOE", "Cistadenocarcinoma SOE", "Cistadenoma seroso SOE",
@@ -2070,7 +2077,7 @@ renomear_tipo_histologico <- function(dados) {
       "Adenocarcinoma produtor de mucina", "Carcinoma de células em anel de sinete", "Carcinoma metastático de células em anel de sinete", "Carcinoma intraductal não infiltrante SOE",
       "Carcinoma de dutos infiltrante", "Comedocarcinoma não infiltrante", "Comedocarcinoma SOE", "Carcinoma juvenil da mama", "Papiloma intraductal",
       "Adenocarcinoma papilar intraductal não infiltrante", "Adenocarcinoma papilar intraductal com invasão", "Adenoma papilar intracístico", "Carcinoma intracístico não infiltrante",
-      
+
       "Carcinoma intracístico SOE", "Papilomatose intraductal SOE", "Adenoma do mamilo", "Carcinoma medular SOE", "Carcinoma medular com estroma amilóide",
       "Carcinoma medular com estroma linfóide", "Carcinoma lobular in situ", "Carcinoma lobular SOE", "Carcinoma ductular infiltrante", "Carcinoma intraductel e carcinoma lobular in situ",
       "Carcinoma infiltrante de dutos e lobular", "Carcinoma inflamatório", "Doença mamária de Paget", "Doença de Paget e carcinoma de dutos infiltrante da mama",
@@ -2081,7 +2088,7 @@ renomear_tipo_histologico <- function(dados) {
       "Tecoma luteinizado", "Tumor esclerosante do estroma", "Luteoma SOE", "Tumor de células da granulosa SOE", "Tumor maligno de células da granulosa",
       "Tumor de células da granulosa e células da teca", "Tumor juvenil de células da granulosa", "Tumor dos cordões sexuais com túbulos anulares",
       "Androblastoma benigno", "Androblastoma SOE", "Androblastoma maligno", "Tumor de células de Sertoli-Leydig", "Ginandroblastoma", "Tumor de células de Sertoli SOE",
-      
+
       "Carcinoma de células de Sertoli", "Tumor de células de Sertoli com depósito de lípides", "Tumor benigno de células de Leydig", "Tumor de células de Leydig SOE",
       "Tumor maligno de células de Leydig", "Tumor de células do hilo", "Tumor de células lipídicas do ovário", "Tumor de supra-renal acessório [resto adrenal]",
       "Paraganglioma SOE", "Paraganglioma maligno", "Paraganglioma simpático", "Paraganglioma parassimpático", "Paraganglioma gangliocítico", "Tumor do glomo jugular",
@@ -2093,7 +2100,7 @@ renomear_tipo_histologico <- function(dados) {
       "Melanoma maligno em sarda melanótica de Hutchinson", "Melanoma de propagação superficial", "Melanoma lentiginoso maligno das extremidades periféricas",
       "Melanoma desmoplástico maligno", "Nevo intradérmico", "Nevo composto", "Nevo pigmentado gigante SOE", "Melanoma maligno em nevo pigmentado gigante",
       "Nevo epitelióide e de células fusiformes", "Melanoma misto epitelióide e de células fusiformes",
-      
+
       "Nevo de células epitelióides", "Melanoma de células epitelióides", "Nevo de células fusiformes", "Melanoma de células fusiformes SOE", "Melanoma de células fusiformes, tipo A",
       "Melanoma de células fusiformes, tipo B", "Nevo azul SOE", "Nevo azul maligno", "Nevo azul celular", "Tumor benigno de tecidos moles", "Sarcoma SOE",
       "Sarcomatose SOE", "Sarcoma de células fusiformes", "Sarcoma de células gigantes (exceto de osso M9250/3)", "Sarcoma de células pequenas", "Sarcoma epitelióide",
@@ -2103,7 +2110,7 @@ renomear_tipo_histologico <- function(dados) {
       "Mixoma SOE", "Mixossarcoma", "Angiomixoma", "Lipoma SOE", "Lipossarcoma SOE", "Fibrolipoma", "Lipossarcoma bem diferenciado", "Fibromixolipoma",
       "Lipossarcoma mixóide", "Lipossarcoma de células redondas", "Lipoma pleomórfico", "Lipossarcoma pleomórfico", "Lipossarcoma misto", "Lipoma intramuscular",
       "Lipoma de células fusiformes", "Lipossarcoma desdiferenciado", "Angiomiolipoma", "Angiolipoma SOE", "Mielolipoma", "Hibernoma", "Lipoblastomatose",
-      
+
       "Leiomioma SOE", "Leiomiomatose SOE", "Leiomiossarcoma SOE", "Leiomioma epitelióide", "Leiomioma celular", "Leiomioma bizarro", "Angiomioma", "Angiomiossarcoma",
       "Mioma", "Miossarcoma", "Leiomiossarcoma mixóide", "Tumor de músculo liso SOE", "Rabdomioma SOE", "Rabdomiossarcoma SOE", "Rabdomiossarcoma pleomórfico",
       "Rabdomiossarcoma tipo misto", "Rabdomioma fetal", "Rabdomioma adulto", "Rabdomiossarcoma embrionário", "Rabdomiossarcoma alveolar", "Nódulo do estroma endometrial",
@@ -2114,7 +2121,7 @@ renomear_tipo_histologico <- function(dados) {
       "Tumor de Brenner maligno", "Fibroadenoma SOE", "Fibroadenoma intracanalicular", "Fibroadenoma pericanalicular", "Adenofibroma SOE", "Adenofibroma seroso",
       "Adenofibroma mucinoso", "Fibroadenoma gigante", "Tumor filodes benigno", "Tumor filodes SOE", "Tumor filodes maligno", "Fibroadenoma juvenil", "Sinovioma benigno",
       "Sarcoma sinovial SOE", "Sarcoma sinovial de células fusiformes", "Sarcoma sinovial de células epitelióides", "Sarcoma sinovial bifásico",
-      
+
       "Sarcoma de células claras (exceto rim M8964/3)", "Mesotelioma benigno", "Mesotelioma maligno", "Mesotelioma fibroso benigno", "Mesotelioma fibroso maligno",
       "Mesotelioma epitelióide benigno", "Mesotelioma epitelióide maligno", "Mesotelioma bifásico benigno", "Mesotelioma bifásico maligno", "Tumor adenomatóide SOE",
       "Mesotelioma cístico", "Disgerminoma", "Seminoma SOE", "Seminoma anaplástico", "Seminoma espermatocítico", "Germinoma", "Carcinoma embrionário SOE",
@@ -2125,7 +2132,7 @@ renomear_tipo_histologico <- function(dados) {
       "Mesomefroma maligno", "Hemangioma SOE", "Hemangiossarcoma", "Hemangioma cavernoso", "Hemangioma venoso", "Hemangioma racemoso", "Sarcoma das células de Kupfer",
       "Hemangioma epitelióde", "Hemangioma histiocitóide", "Hemangioendotelioma benigno", "Hemangioendotelioma SOE", "Hemangioendotelioma maligno", "Hemangioma capilar",
       "Hemangioma intramuscular", "Hemangioendotelioma epitelióide SOE", "Hemangioendotelioma epitelióide maligno", "Tumor alveolar brônquio intravascular", "Sarcoma de Kaposi",
-      
+
       "Angioqueratoma", "Hemangioma queratótico verrucoso", "Hemangiopericitoma benigno", "Hemangiopericitoma SOE", "Hemangiopericitoma maligno",
       "Angiofibroma SOE", "Hemangioblastoma", "Linfangioma SOE", "Linfangiossarcoma", "Linfangioma capilar", "Linfangioma cavernoso", "Linfangioma cístico",
       "Linfangiomioma", "Linfangiomiomatose", "Hemolinfangioma", "Osteoma SOE", "Osteossarcoma SOE", "Osteossarcoma condroblástico", "Osteossarcoma fibroblástico",
@@ -2135,7 +2142,7 @@ renomear_tipo_histologico <- function(dados) {
       "Condrossarcoma mesenquimal", "Fibrossarcoma condromixóide", "Tumor de células gigantes do osso, SOE", "Tumor maligno de células gigantes do osso",
       "Tumor de células gigantes de partes moles, SOE", "Tumor maligno de células gigantes de partes moles", "Sarcoma de Ewing", "Adamantinoma de ossos longos",
       "Fibroma ossificante", "Tumor odontogênico benigno", "Tumor odontogênico SOE", "Tumor odontogênico maligno", "Dentinoma", "Cementoma SOE", "Cementoblastoma benigno",
-      
+
       "Fibroma cementificante", "Cementoma gigantiforme", "Odontoma SOE", "Odontoma composto", "Odontoma complexo", "Fibro-odontoma ameloblástico",
       "Odontossarcoma ameloblástico", "Tumor odontogênico adenomatóide", "Cisto odontogênico calcificante", "Tumor odontogênico de células fantasma",
       "Ameloblastoma SOE", "Ameloblastoma maligno", "Odontoameloblastoma", "Tumor odontogênico escamoso", "Mixoma odontogênico", "Fibroma odontogênico central",
@@ -2146,7 +2153,7 @@ renomear_tipo_histologico <- function(dados) {
       "Astrocitoma anaplástico", "Astrocitoma protoplásmico", "Astrocitoma gemistocítico", "Astrocitoma fibrilar", "Astrocitoma pilocítico", "Espongioblastoma SOE",
       "Espongioblastoma polar", "Xantoastrocitoma pleomórfico", "Astroblastoma", "Glioblastoma SOE", "Glioblastoma de células gigantes", "Gliossarcoma",
       "Espongioblastoma polar primitivo", "Oligodendroglioma SOE", "Oligodendroglioma anaplástico", "Oligodendroblastoma", "Meduloblastoma SOE",
-      
+
       "Meduloblastoma desmoplástico", "Medulomioblastoma", "Tumor neuroectodérmico primitivo", "Sarcoma cerebelar SOE", "Sarcoma monstrocelular",
       "Ganglioneuroma", "Ganglioneuroblastoma", "Ganglioneuromatose", "Neuroblastoma SOE", "Meduloepitelioma SOE", "Meduloepitelioma teratóide",
       "Neuroepitelioma SOE", "Espongioneuroblastoma", "Ganglioglioma", "Neurocitoma", "Tumor paciniano", "Retinoblastoma SOE", "Retinoblastoma diferenciado",
@@ -2158,7 +2165,7 @@ renomear_tipo_histologico <- function(dados) {
       "Tumor maligno de células granulares", "Sarcoma alveolar de partes moles", "Linfoma maligno SOE", "Linfoma maligno não-Hodgkin SOE", "Linfossarcoma SOE",
       "Reticulossarcoma SOE", "Microglioma", "Linfoma maligno difuso SOE", "Doença de Hodgkin SOE", "Doença de Hodgkin de celularidade mista SOE",
       "Doença de Hodgkin, de depleção linfocítica, SOE", "Doença de Hodgkin, de depleção linfocítica, com fibrose difusa", "Doença de Hodgkin, de depleção linfocítica, reticular",
-      
+
       "Doença de Hodgkin, com predominância linfocítica, SOE", "Doença de Hodgkin, com predominância linfocítica, difusa", "Doença de Hodgkin, com predominância linfocítica, nodular",
       "Paragranuloma de Hodgkin SOE", "Granuloma de Hodgkin", "Sarcoma de Hodgkin", "Doença de Hodgkin, esclerose nodular, SOE", "Doença de Hodgkin, esclerose nodular, fase celular",
       "Doença de Hodgkin, esclerose nodular, predominância linfocítica", "Doença de Hodgkin, esclerose nodular, celularidade mista", "Doença de Hodgkin, esclerose nodular, depleção linfocítica",
@@ -2171,7 +2178,7 @@ renomear_tipo_histologico <- function(dados) {
       "Linfoma maligno, linfocítico, bem diferenciado, nodular", "Linfoma maligno, linfocítico, diferenciação intermediária, nodular", "Linfoma maligno de células pequenas clivadas, folicular",
       "Linfoma maligno linfocítico, pouco diferenciado, nodular", "Linfoma maligno centroblástico folicular", "Linfoma maligno de células grandes, folicular, SOE",
       "Micose fungóide", "Doença de Sézary", "Linfoma de células T periférico SOE", "Linfoma de zona T", "Linfoma linfoepitelóide",
-      
+
       "Linfoma de células T periféricos (linfadenopatia angio-imunoblástica com disproteinemia)", "Linfoma de células T, periférico, de células pequenas pleomórficas",
       "Linfoma de células T, periférico, pleomórfico de células médias e grandes", "Linfoma cutâneo", "Linfoma de células B monocitóides", "Angioendoteliomatose",
       "Linfoma de células T angiocêntrico", "Linfoma de células grandes (Ki-1+)", "Histiocitose maligna", "Doença de Letterer-Siwe", "Linfoma histiocítico verdadeiro",
@@ -2183,21 +2190,21 @@ renomear_tipo_histologico <- function(dados) {
       "Leucemia /linfoma de células T adultas", "Leucemia de plasmócitos", "Eritroleucemia", "Eritremia aguda", "Eritremia crônica", "Leucemia de células de linfossarcoma",
       "Leucemia mielóide SOE", "Leucemia mielóide aguda", "Leucemia mielóide subaguda", "Leucemia mielóide crônica", "Leucemia mielóide aleucêmica",
       "Leucemia promielocítica aguda", "Leucemia mielomonocítica aguda", "Leucemia mielomonocítica crônica", "Leucemia basófila", "Leucemia eosinofílica",
-      
+
       "Leucemia monocítica SOE", "Leucemia monocítica aguda", "Leucemia monocítica subaguda", "Leucemia monocítica crônica", "Leucemia monocítica aleucêmica",
       "Leucemia de mastócitos", "Leucemia megacarioblástica aguda", "Sarcoma mielóide", "Panmielose aguda", "Mielofibrose aguda", "Leucemia 'hairy cell'",
       "Reticuloendoteliose leucêmica", "Policitemia vera", "Doença mieloproliferativa crônica", "Mieloesclerose com metaplasia mielóide", "Trombocitemia idiopática",
       "Doença linfoproliferativa SOE", "Anemia refratária SOE", "Anemia refratária sem sideroblastos", "Anemia refratária com sideroblastos", "Anemia refratária com excesso de blastos",
       "Anemia refratária com excesso de blastos com transformação", "Síndrome mielodisplásica SOE",
-      " Neoplasia maligna, incerta se primária ou metastática​",	" Tumor maligno de células claras​",	" Carcinomatose​",	" Carcinoma neuroendócrino de grandes células​",	" Carcinoma de grandes células, fenótipo rabdóide​",	" Carcinoma de células 'vítreas'​",	" Carcinoma de células gigantes tipo osteoclasto​",	" Carcinoma de células não pequenas​",	" Carcinoma escamoso, papilar não invasivo​",	" Carcinoma de células escamosas corneificadas​",	" Carcinoma escamocelular, basalóide​",	" Carcinoma escamoso, tipo células claras​",	" Carcinoma basocelular nodular​",	" Carcinoma basocelular adenóide​",	" Tumor maligno de células granulares​",	" Neoplasia benigna do epitélio glandular​",	" Carcinoma in situ do epitélio glandular​",	" Carcinoma de células transicionais, micropapilífero​",	" Neoplasia glandular intraepitelial, grau III​",	" Adenoma de glândulas intestinais​",	" Somatostatinoma, SOE​",	" Carcinoma hepatocelular, tipo esclerosante​",	" Carcinoma hepatocelular, variante fusocelular​",	" Carcinoma hepatocelular, tipo células claras​",	" Carcinoma hepatocelular, tipo pleomórfico​(CIDZERO)",	" Carcinoma ductal in situ tipo cribriforme (C50.-)​",	" Adenocarcinoma de células parietais (C16.-)​",	" Adenocarcinoma de glândulas anais (C21.1)​",	" Carcinoma ductal in situ tipo sólido (C50.-)​",	" Carcinóide de células semelhantes a enterocromafinicas, SOE​",	" Tumor maligno de células semelhantes a enterocromafinicas​",	" Carcinóide tubular​",	" Tumor carcinoide atípico​",	" Carcinoma bronquíolo-alveolar não mucinoso (C34.-)​",	" Carcinoma bronquíolo-alveolar mucinoso (C34.-)​",	" Carcinoma bronquíolo-alveolar misto, mucinoso e não mucinoso (C34.-)​(CIDZERO_R)",	" Adenocarcinoma com subtipos mistos​",	" Carcinoma pituitário, SOE (C75.1)​",	" Adenocarcinoma de células claras (C56.9)​",	" Carcinoma de células renais associado a cisto (C64.9)​",	" Carcinoma renal, cromófobo (C64.9)​",	" Carcinoma renal, sarcomatoide (C64.9)​",	" Carcinoma de ductos coletores (C64.9)​",	" Adenoma folicular atípico (C73.9)​",	" Adenocarcinoma fetal (C73.9)​",	" Carcinoma folicular encapsulado (C73.9)​",	" Carcinoma insular (C73.9)​",	" Microcarcinoma papilífero (C73.9)​",	" Carcinoma papilífero, tipo células oxifílicas (C73.9)​",	" Carcinoma papilífero encapsulado (C73.9)​",	" Carcinoma papilífero, células colunares (C73.9)​",	" Carcinoma papilífero, variante de células altas (C73.9)​",	" Carcinoma misto medular e folicular (C73.9)​",	" Carcinoma misto medular papilífero (C73.9)​",	" Adenocarcinoma endometrioide, tipo secretor​",	" Adenocarcinoma endometrioide, tipo células ciliadas​",	" Adenocarcinoma tipo endocervical​",	" Tumor de Brenner maligno (C56.9)​(CIDZERO)",	" Espiradenoma écrino maligno",	" Carcinoma ductal de glândula sudorípara, esclerosante",	" Adenocarcinoma écrino papilífero",	" Poroma ecrino maligno",	" Adenocarcinoma écrino",	" Tumor seroso atípico proliferativo",	" Tumor cístico de células claras de malignidade limítrofe",	" Adenoma viloso",	" Carcinoma sólido pseudopapilífero",	" Tumor intraductal papilífero mucinoso com displasia moderada",	" Carcinoma intraductal papilífero mucinoso, não invasivo",	" Carcinoma intraductal papilífero mucinoso, invasivo",	" Tumor cístico papilífero seroso de malignidade limítrofe",	" Tumor papilífero seroso de malignidade limítrofe",	" Cistadenocarcinoma mucinoso, não invasivo",	" Tumor cístico mucinoso de malignidade limítrofe",	" Adenoma seroso de células claras, borderline",	" Adenocarcinoma mucinoso, tipo endocervical",	" Carcinoma intraductal micropapilífero",	" Carcinoma cístico hipersecretor",	" Carcinoma medular atípico",	" Carcinoma ductal, tipo desmoplásico",	" Carcinoma misto (ducto infiltrativo e de outros tipos)",	
-      "Carcinoma lobular infiltrativo misto com outros tipos de carcinoma",	" Adenocarcinoma polimorfo de baixo grau",	" Carcinoma tubular",	" Cistoadenocarcinoma tipo células acinares",	" Adenocarcinoma com diferenciação neuroendócrina",	" Carcinoma metaplásico, SOE",	" Adenocarcinoma hepatoide",	" Timoma, tipo A, SOE",	" Timoma, tipo A, SOE",	" Timoma, Tipo A, maligno",	" Timoma, tipo AB, SOE",	" Timoma maligno tipo AB",	" Timoma, tipo B1, SOE",	" Timoma maligno tipo B1",	" Timoma tipo B2, SOE",	" Timoma maligno tipo B2",	" Timoma tipo B3, SOE",	" Timoma maligno tipo B3",	" Timoma tipo C",	" Tumor epitelial tipo fusiforme com elementos semelhantes ao timo",	" Carcinoma semelhante a células tímicas",	" Tumor do estroma dos cordões sexuais, parcialmente diferenciado.",	" Tumor do estromal dos cordões sexuais, formas mistas",	" Tumor estromal com poucos elementos dos cordões sexuais",	" Tumor de células de Sertoli-Leydig, de diferenciação intermediária",	" Tumor de células de Sertoli-Leydig, pouco diferenciado",	" Tumor de células de Sertoli-Leydig, retiforme",	" Tumor de células de Sertoli-Leydig, pouco diferenciado, com elementos heterólogos",	" Tumor de células de Sertoli, células grandes calcificadas",	" Tumor de células de Sertoli-Leydig, pouco diferenciado",	" Tumor maligno de células produtoras de esteroides",	" Tumor glômico maligno",	" Melanoma meníngeo difuso",	" Neoplasia melanocítica intraepitelial",	" Melanoma lentiginoso acral",	" Tumor mesenquimal indiferenciado",	" Sarcoma indiferenciado",	" Tumor desmoplásico de pequenas células redondas",	" Fibroma de células grandes",	" Tumor fibroso solitário maligno",	" Tumor miofibroblástico inflamatório",	" Tumor miofibroblástico maligno",	" Tumor fibrohistiocítico plexiforme",	" Histiocitoma fibroso angiomatóide",	" Lipoma atípico",	" Tumor de malignidade indeterminada",	" Leiomiossarcoma",	" Leiomioma metastatizante",	" Rabdomiossarcoma fusocelular",	" Rabdomiossarcoma alveolar",	" Sarcoma do estroma endometrial de baixo grau",	" Carcinofibroma",	" Tumor estromal gastrointestinal, benigno",	" Tumor estromal gastrointestinal maligno",	" Tumor estromal gastrointestinal, malignidade incerta",	" Tumor estromal gastrointestinal maligno",	" Nefroblastoma cístico parcialmente diferenciado",	" Nefroma cístico maligno",	" Blastoma pleuropulmonar",	" Sialoblastoma",	" Mioepitelioma maligno",	" Adenofibroma seroso de malignidade limítrofe",	" Adenocarcinofibroma seroso",	" Adenofibroma mucinoso de malignidade limítrofe",	" Adenocarcinofibroma mucinoso",	" Neoplasia maligna intratubular de células germinativas",	" Tumor de células germinativas não seminomatoso",	" Tumor trofoblástico epitelióide",	" Osteossarcoma central",	" Osteossarcoma central bem diferenciado",	" Osteossarcoma telangiectásico",	" Osteossarcoma perióstal",	" Osteossarcoma de superfície, alto grau",	" Condrossarcoma de células claras",	" Condrossarcoma desdiferenciado",	" Tumor tenossinovial de células gigantes maligno",	" Craniofaringioma, tipo adamantinoma",	" Craniofaringioma papilífero",	" Tumor de Askin",	" Cordoma",	" Cordoma condróide",	" Cordoma desdiferenciado",	" Papiloma do plexo coróide atípico",	" Ependimoma anaplásico",	" Astrocitoma infantil desmoplásico",	" Tumor neuroepitelial disembrioplástico",	" Astrocitoma pilocítico",	" Glioblastoma multiforme",	" Gliofibroma",	" Glioma cordóide",	" Meduloblastoma de células grandes",	" Ganglioglioma anaplásico",	" Neurocitoma central",	" Tumor teratoide/rabdóide atípico",	" Retinoblastoma difuso",	" Meningioma rabdóide",	" Meningioma atípico",	" Perineuroma maligno",	" Linfoma composto, Hodgkin/não Hodgkin",	" Linfoma de Hodgkin, rico em linfócitos",	" Linfoma mediastinal primário de grandes células B",	
+      " Neoplasia maligna, incerta se primária ou metastática​",	" Tumor maligno de células claras​",	" Carcinomatose​",	" Carcinoma neuroendócrino de grandes células​",	" Carcinoma de grandes células, fenótipo rabdóide​",	" Carcinoma de células 'vítreas'​",	" Carcinoma de células gigantes tipo osteoclasto​",	" Carcinoma de células não pequenas​",	" Carcinoma escamoso, papilar não invasivo​",	" Carcinoma de células escamosas corneificadas​",	" Carcinoma escamocelular, basalóide​",	" Carcinoma escamoso, tipo células claras​",	" Carcinoma basocelular nodular​",	" Carcinoma basocelular adenóide​",	" Tumor maligno de células granulares​",	" Neoplasia benigna do epitélio glandular​",	" Carcinoma in situ do epitélio glandular​",	" Carcinoma de células transicionais, micropapilífero​",	" Neoplasia glandular intraepitelial, grau III​",	" Adenoma de glândulas intestinais​",	" Somatostatinoma, SOE​",	" Carcinoma hepatocelular, tipo esclerosante​",	" Carcinoma hepatocelular, variante fusocelular​",	" Carcinoma hepatocelular, tipo células claras​",	" Carcinoma hepatocelular, tipo pleomórfico​(CIDZERO)",	" Carcinoma ductal in situ tipo cribriforme (C50.-)​",	" Adenocarcinoma de células parietais (C16.-)​",	" Adenocarcinoma de glândulas anais (C21.1)​",	" Carcinoma ductal in situ tipo sólido (C50.-)​",	" Carcinóide de células semelhantes a enterocromafinicas, SOE​",	" Tumor maligno de células semelhantes a enterocromafinicas​",	" Carcinóide tubular​",	" Tumor carcinoide atípico​",	" Carcinoma bronquíolo-alveolar não mucinoso (C34.-)​",	" Carcinoma bronquíolo-alveolar mucinoso (C34.-)​",	" Carcinoma bronquíolo-alveolar misto, mucinoso e não mucinoso (C34.-)​(CIDZERO_R)",	" Adenocarcinoma com subtipos mistos​",	" Carcinoma pituitário, SOE (C75.1)​",	" Adenocarcinoma de células claras (C56.9)​",	" Carcinoma de células renais associado a cisto (C64.9)​",	" Carcinoma renal, cromófobo (C64.9)​",	" Carcinoma renal, sarcomatoide (C64.9)​",	" Carcinoma de ductos coletores (C64.9)​",	" Adenoma folicular atípico (C73.9)​",	" Adenocarcinoma fetal (C73.9)​",	" Carcinoma folicular encapsulado (C73.9)​",	" Carcinoma insular (C73.9)​",	" Microcarcinoma papilífero (C73.9)​",	" Carcinoma papilífero, tipo células oxifílicas (C73.9)​",	" Carcinoma papilífero encapsulado (C73.9)​",	" Carcinoma papilífero, células colunares (C73.9)​",	" Carcinoma papilífero, variante de células altas (C73.9)​",	" Carcinoma misto medular e folicular (C73.9)​",	" Carcinoma misto medular papilífero (C73.9)​",	" Adenocarcinoma endometrioide, tipo secretor​",	" Adenocarcinoma endometrioide, tipo células ciliadas​",	" Adenocarcinoma tipo endocervical​",	" Tumor de Brenner maligno (C56.9)​(CIDZERO)",	" Espiradenoma écrino maligno",	" Carcinoma ductal de glândula sudorípara, esclerosante",	" Adenocarcinoma écrino papilífero",	" Poroma ecrino maligno",	" Adenocarcinoma écrino",	" Tumor seroso atípico proliferativo",	" Tumor cístico de células claras de malignidade limítrofe",	" Adenoma viloso",	" Carcinoma sólido pseudopapilífero",	" Tumor intraductal papilífero mucinoso com displasia moderada",	" Carcinoma intraductal papilífero mucinoso, não invasivo",	" Carcinoma intraductal papilífero mucinoso, invasivo",	" Tumor cístico papilífero seroso de malignidade limítrofe",	" Tumor papilífero seroso de malignidade limítrofe",	" Cistadenocarcinoma mucinoso, não invasivo",	" Tumor cístico mucinoso de malignidade limítrofe",	" Adenoma seroso de células claras, borderline",	" Adenocarcinoma mucinoso, tipo endocervical",	" Carcinoma intraductal micropapilífero",	" Carcinoma cístico hipersecretor",	" Carcinoma medular atípico",	" Carcinoma ductal, tipo desmoplásico",	" Carcinoma misto (ducto infiltrativo e de outros tipos)",
+      "Carcinoma lobular infiltrativo misto com outros tipos de carcinoma",	" Adenocarcinoma polimorfo de baixo grau",	" Carcinoma tubular",	" Cistoadenocarcinoma tipo células acinares",	" Adenocarcinoma com diferenciação neuroendócrina",	" Carcinoma metaplásico, SOE",	" Adenocarcinoma hepatoide",	" Timoma, tipo A, SOE",	" Timoma, tipo A, SOE",	" Timoma, Tipo A, maligno",	" Timoma, tipo AB, SOE",	" Timoma maligno tipo AB",	" Timoma, tipo B1, SOE",	" Timoma maligno tipo B1",	" Timoma tipo B2, SOE",	" Timoma maligno tipo B2",	" Timoma tipo B3, SOE",	" Timoma maligno tipo B3",	" Timoma tipo C",	" Tumor epitelial tipo fusiforme com elementos semelhantes ao timo",	" Carcinoma semelhante a células tímicas",	" Tumor do estroma dos cordões sexuais, parcialmente diferenciado.",	" Tumor do estromal dos cordões sexuais, formas mistas",	" Tumor estromal com poucos elementos dos cordões sexuais",	" Tumor de células de Sertoli-Leydig, de diferenciação intermediária",	" Tumor de células de Sertoli-Leydig, pouco diferenciado",	" Tumor de células de Sertoli-Leydig, retiforme",	" Tumor de células de Sertoli-Leydig, pouco diferenciado, com elementos heterólogos",	" Tumor de células de Sertoli, células grandes calcificadas",	" Tumor de células de Sertoli-Leydig, pouco diferenciado",	" Tumor maligno de células produtoras de esteroides",	" Tumor glômico maligno",	" Melanoma meníngeo difuso",	" Neoplasia melanocítica intraepitelial",	" Melanoma lentiginoso acral",	" Tumor mesenquimal indiferenciado",	" Sarcoma indiferenciado",	" Tumor desmoplásico de pequenas células redondas",	" Fibroma de células grandes",	" Tumor fibroso solitário maligno",	" Tumor miofibroblástico inflamatório",	" Tumor miofibroblástico maligno",	" Tumor fibrohistiocítico plexiforme",	" Histiocitoma fibroso angiomatóide",	" Lipoma atípico",	" Tumor de malignidade indeterminada",	" Leiomiossarcoma",	" Leiomioma metastatizante",	" Rabdomiossarcoma fusocelular",	" Rabdomiossarcoma alveolar",	" Sarcoma do estroma endometrial de baixo grau",	" Carcinofibroma",	" Tumor estromal gastrointestinal, benigno",	" Tumor estromal gastrointestinal maligno",	" Tumor estromal gastrointestinal, malignidade incerta",	" Tumor estromal gastrointestinal maligno",	" Nefroblastoma cístico parcialmente diferenciado",	" Nefroma cístico maligno",	" Blastoma pleuropulmonar",	" Sialoblastoma",	" Mioepitelioma maligno",	" Adenofibroma seroso de malignidade limítrofe",	" Adenocarcinofibroma seroso",	" Adenofibroma mucinoso de malignidade limítrofe",	" Adenocarcinofibroma mucinoso",	" Neoplasia maligna intratubular de células germinativas",	" Tumor de células germinativas não seminomatoso",	" Tumor trofoblástico epitelióide",	" Osteossarcoma central",	" Osteossarcoma central bem diferenciado",	" Osteossarcoma telangiectásico",	" Osteossarcoma perióstal",	" Osteossarcoma de superfície, alto grau",	" Condrossarcoma de células claras",	" Condrossarcoma desdiferenciado",	" Tumor tenossinovial de células gigantes maligno",	" Craniofaringioma, tipo adamantinoma",	" Craniofaringioma papilífero",	" Tumor de Askin",	" Cordoma",	" Cordoma condróide",	" Cordoma desdiferenciado",	" Papiloma do plexo coróide atípico",	" Ependimoma anaplásico",	" Astrocitoma infantil desmoplásico",	" Tumor neuroepitelial disembrioplástico",	" Astrocitoma pilocítico",	" Glioblastoma multiforme",	" Gliofibroma",	" Glioma cordóide",	" Meduloblastoma de células grandes",	" Ganglioglioma anaplásico",	" Neurocitoma central",	" Tumor teratoide/rabdóide atípico",	" Retinoblastoma difuso",	" Meningioma rabdóide",	" Meningioma atípico",	" Perineuroma maligno",	" Linfoma composto, Hodgkin/não Hodgkin",	" Linfoma de Hodgkin, rico em linfócitos",	" Linfoma mediastinal primário de grandes células B",
       " Linfoma da zona marginal esplênica",	" Linfoma da zona marginal tipo células B, SOE",	" Linfoma MALT",	" Linfoma subcutâneo, tipo paniculite de células T",	" Linfoma hepatoesplênico tipo gama-delta",	" Linfoma intestinal de células T",	"Lesão linfoproliferativa cutânea primária de célula T (CD30+) (C44.-)",	" Linfoma nasal e tipo nasal de células T/NK",	" Linfoma linfoblástico de células precursoras, SOE",	" Linfoma linfoblástico de células precursoras B",	" Linfoma linfoblástico de células precursoras T",	"Leucemia de plasmocitos (C42.1)",	"Plamocitoma extramedular",	" Leucemia células mastocitárias",	"Histiocitose maligna",	" Histiocitose de células de Langerhans, SOE",	" Histiocitose de células de Langerhans, multifocal",	" Histiocitose de células de Langerhans unifocal",	" Histiocitose de células de Langerhans, poliostótica",	" Sarcoma histiocítico",	"Sarcoma histiocitico",	" Sarcoma de células de Langerhans",	" Sarcoma de células dendríticas interdigitantes",	" Sarcoma de células dendríticas foliculares",	" Doença de depósito de imunoglobulina",	" Leucemia aguda, bifenotípica",	" Leucemia linfocítica granular de células grandes tipo T",	" Leucemia prolinfocítica tipo célula B",	" Leucemia prolinfocítica tipo célula T",	" Leucemia linfoblástica de células precursoras, SOE",	" Leucemia linfoblástica de células precursoras tipo B",	" Leucemia linfoblástica de células precursoras tipo T",	"Leucemia linfoblástica de células T precursora",	" Leucemia mieloide aguda com eosinófilos anormais na medula",	" Leucemia mieloide aguda, com diferenciação mínima",	" Leucemia mieloide aguda sem maturação",	" Leucemia mieloide aguda com maturação",	" Leucemia crônica mielogênica, BCR/ABL positiva",	" Leucemia mieloide crônica atípica, BCR/ABL negativa",	" Leucemia mieloide aguda com displasia com multilinhagem",	" Leucemia mieloide aguda, t(8;21)",	" Leucemia mieloide aguda com anomalias em 11q23",	" Leucemia mieloide aguda relacionada ao tratamento",	" Leucemia mielomonocítica crônica",	" Leucemia mielomonocítica juvenil",	" Leucemia agressiva de células NK",	" Policitemia vera",	" Síndrome hipereosinofílica",	"Trombocitemia essencial",	" Citopenia refratária com displasia multilinhagem",	" Síndrome mielodisplásica relacionada ao tratamento",	"Doença mieloproliferativa crônica classificavel",	" Anemia refratária com sideroblastos em anel",	" RAEB I (Refratária Anemia com Excesso de Blastos)",	" RAEB II (Refratária Anemia com Excesso de Blastos)",	" RAEB-T (Refratária Anemia com Excesso de Blastos em Transformação)",	"Citopenia refratária com displasia multilinear (síndrome mielodisplásica)",	" Síndrome mielodisplásica com deleção 5q (5q-)",	"Síndrome mielodisplásica relacionada a terapia, SOE",	"Síndrome mielodisplásica, SOE",	"clinicamente tumor maligno (câncer)",
       "Neoplasia benigna",	"Tumor de células claras, SOE",	"Glucagonoma, SOE (C25.-)",	"Somatostatinoma maligno",	"Adenoma pituitario, SOE (C75.1)",	"Adenofibroma de células claras, malignidade limítrofe (C56.9)",	"Adenoma papilar digitiforme agressivo (C44.-)",	"Tumor de células de Sertoli-Leydig com diferenciação intermediaria e elementos heterologos",	"Melanocitoma meningeano (C70.9)",	"Lesão proliferativa dérmica em nevos congênitos (C44.-)",	"Miofibroblastoma",	"Tumor miofibroblástico peribrônquico (C34.-)",	"Fibroblastoma de células gigantes",	"Lipossarcoma fibroblástico",	"Tumor estromal gastrointestinal benigno",	"Angioendotelioma papilar endovascular",	"Hemangioendotelioma fusocelular",	"Osteossarcoma intra-cortical (C40.-, C41.-)",	"Carcinossarcoma odontogênico",	"Ganglioneuromatose",	"Perineuroma, SOE",	"Linfoma associado a tecido linfóide mucoso",	"Mieloesclerose com metaplasia mielóide",	"Clinicamente tumor, SOE",	"Base do diagnóstico não mensionado"
-      
-      
+
+
     )
   )
-  
+
   # Verifica se a coluna Tipo_Histologico existe antes de tentar acessá-la
   if ("Tipo_Histologico" %in% names(dados)) {
     message("Mapeando os códigos de Tipo Histológico para nomes completos.")
@@ -2208,10 +2215,217 @@ renomear_tipo_histologico <- function(dados) {
   } else {
     message("A coluna 'Tipo_Histologico' não foi encontrada no dataframe.")
   }
-  
-  message("Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi criada uma coluna no final do dataframe, chamada Tipo_Histologico_Completo.")
+
+  message("Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Tipo_Histologico_Completo.")
   return(dados)
 }
+
+
+
+
+
+
+
+#' Análise de Completude de Dados
+#'
+#' Esta função calcula e avalia a completude de cada variável em um dataframe e gera um gráfico de barras horizontal. A completude é exibida junto com uma classificação baseada no escore de Romero & Cunha. Referência: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.
+#'
+#' @param dados Um dataframe contendo as variáveis a serem analisadas.
+#' @return Retorna uma tabela com a completude de cada variável, incluindo um gráfico de barras horizontal referente aos Dados Ausentes.
+#' @export
+#' @name analise_completude
+#' @examples
+#' # Supondo que você tenha um dataframe chamado dados_RHC_combinados,
+#' # Use a função da seguinte forma:
+#'
+#' analise_completude(dados_RHC_combinados)
+#'
+#' OBSERVAÇÃO: Sem atribuir a nenhum objeto.
+analise_completude <- function(dados) {
+  message("Iniciando a análise de completude de dados.")
+
+  # Nome das variáveis
+  variaveis <- colnames(dados)
+
+  message("Calculando o número de Dados Ausentes e 'Sem informação' por coluna.")
+  # Número de NA's e "Sem informação" por coluna
+  dados_ausentes <- sapply(dados, function(x) {
+    sum(is.na(x) | as.character(x) == "Sem informação")
+  })
+
+
+  # Calcular a porcentagem de NA's por coluna em porcentagem, arredondada para duas casas decimais (usada no gráfico)
+  porcentagem <- round((dados_ausentes / nrow(dados)) * 100, 2)
+
+
+  # Calcular a completude como o complemento da porcentagem
+  completude <- round(100 - porcentagem, 2)
+
+  # Função para classificar a completude com base no escore de Romero & Cunha
+  classificar_completude <- function(p) {
+    if (p >= 95) {
+      return("Excelente")
+    } else if (p >= 90) {
+      return("Bom")
+    } else if (p >= 80) {
+      return("Regular")
+    } else if (p >= 50) {
+      return("Ruim")
+    } else {
+      return("Muito Ruim")
+    }
+  }
+
+
+  # Aplicar a classificação
+  classificacao <- sapply(completude, classificar_completude)
+
+  message("Criando a tabela de resultados.")
+
+  # Criar a tabela de resultados
+  Ausentes <- data.frame(Variavel = variaveis,
+                         Completude = completude,
+                         Dados_Ausentes = dados_ausentes,
+                         Classificacao_Completude = classificacao,
+                         row.names = NULL)
+  message(".")
+  message(".")
+  message(".")
+  # Ordenar a tabela em ordem crescente de Dados_Ausentes
+  Ausentes <- Ausentes[order(Ausentes$Dados_Ausentes), ]
+
+  # Exibir a tabela de ausentes sem os números das linhas
+  print(Ausentes, row.names = FALSE)
+
+
+  # Ajustar as margens do gráfico (margem esquerda e direita ajustadas)
+  par(mar=c(6, 17, 2, 10) + 0.1)
+
+
+  # Criar o gráfico de barras horizontal com a ordem invertida
+  bp <- barplot(Ausentes$Dados_Ausentes,
+                names.arg = Ausentes$Variavel,
+                horiz = TRUE,
+                las = 1,
+                col = colorRampPalette(c("darkgreen", "green", "yellow", "orange", "red"))(length(Ausentes$Dados_Ausentes)),
+                border = NA,
+                xlab = NA,
+                main = "Total de dados ausentes, porcentagem e Classificação de Completude por Variável",
+                cex.names = 0.8)
+
+
+  # Adicionar os valores de Dados_Ausentes, Porcentagem e Classificação no final das barras
+  text(x = Ausentes$Dados_Ausentes,
+       y = bp,
+       labels = paste(Ausentes$Dados_Ausentes, " (", porcentagem[order(dados_ausentes)], "%, ", Ausentes$Classificacao_Completude, ")", sep = ""),
+       pos = 4,
+       cex = 0.7,
+       col = "black",
+       xpd = TRUE)
+
+
+  # Adicionar a fonte
+  mtext("Classificação de Completude: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças \n menores de um ano registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.",
+        side = 1, line = 4, at = 0.1, cex = 0.8, col = "black", xpd = TRUE, adj = 0)
+  message(".")
+  message(".")
+  message(".")
+  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006")
+
+  message(".")
+  message("Análise de completude concluída.")
+}
+
+
+
+
+
+
+
+
+
+
+#' Análise de Completude de Dados por Ano
+#'
+#' Esta função calcula e avalia a completude de cada variável por ano, distribuindo a proporção de completude pela variável Ano_do_Banco. A completude é exibida junto com uma classificação baseada no escore de Romero & Cunha. Referência: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006."
+#'
+#' @param dados Um dataframe contendo as variáveis a serem analisadas.
+#' @return Retorna uma tabela com a completude de cada variável por ano, incluindo uma legenda com a classificação de completude.
+#' @export
+#' @name analise_completude_ano
+#' @examples
+#' # Supondo que você tenha um dataframe chamado dados_RHC_combinados,
+#' # Use a função da seguinte forma:
+#'
+#' Nome_da_Sua_Tabela_de_Completude <- analise_completude_ano(dados_RHC_combinados)
+analise_completude_ano <- function(dados) {
+  message("Iniciando a análise de completude de dados por ano.")
+
+  # Nome das variáveis
+  variaveis <- colnames(dados)
+
+  # Identificar os anos únicos na coluna Ano_do_Banco
+  anos <- sort(unique(dados$Ano_do_Banco))
+
+  # Função para classificar a completude com base no escore de Romero & Cunha
+  classificar_completude <- function(p) {
+    if (p >= 95) {
+      return("E")  # Excelente
+    } else if (p >= 90) {
+      return("B")  # Bom
+    } else if (p >= 80) {
+      return("R")  # Regular
+    } else if (p >= 50) {
+      return("RU")  # Ruim
+    } else {
+      return("MR")  # Muito Ruim
+    }
+  }
+
+  # Inicializar uma lista para armazenar a completude por variável e ano
+  completude_lista <- list()
+
+  # Calcular a completude por variável e ano
+  for (ano in anos) {
+    message(paste("Processando dados para o ano:", ano))
+    dados_ano <- dados[dados$Ano_do_Banco == ano, ]
+    dados_ausentes <- sapply(dados_ano, function(x) {
+      sum(is.na(x) | as.character(x) == "Sem informação")
+    })
+    completude <- round(100 - (dados_ausentes / nrow(dados_ano) * 100), 1)
+    classificacao <- sapply(completude, classificar_completude)
+    completude_lista[[as.character(ano)]] <- paste0(completude, "% (", classificacao, ")")
+  }
+
+  message("Criando a tabela de resultados.")
+  # Criar a tabela de resultados como data frame
+  Completude <- data.frame(Variavel = variaveis)
+
+  for (ano in anos) {
+    Completude[[as.character(ano)]] <- completude_lista[[as.character(ano)]]
+  }
+
+  # Exibir a tabela de completude sem os números das linhas
+  print(Completude, row.names = FALSE)
+
+  # Adicionar a legenda explicando as classificações
+  cat("\nLegenda de Classificação de Completude:\n")
+  cat("E  - Excelente (>= 95%)\n")
+  cat("B  - Bom (90% a 94.9%)\n")
+  cat("R  - Regular (80% a 89.9%)\n")
+  cat("RU - Ruim (50% a 79.9%)\n")
+  cat("MR - Muito Ruim (< 50%)\n")
+  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.")
+
+  message("Análise de completude concluída.")
+
+  # Retornar a tabela de completude
+  return(Completude)
+}
+
+
+
+
 
 
 
@@ -2226,7 +2440,7 @@ renomear_tipo_histologico <- function(dados) {
 #' @examples
 #' # Supondo que você tenha no diretório de trabalho arquivos DBF do RHC que permanecem com o mesmo nome que vieram do Integrador,
 #' # Use a função da seguinte forma:
-#' 
+#'
 #' dados_RHC_combinados <- construir_banco()
 #' # Se nenhum arquivo for encontrado ou se houver erros ao juntar os arquivos, dados_combinados será NULL.
 #' # Caso contrário, você terá um dataframe com todos os dados ajustados de forma automática.
@@ -2236,154 +2450,131 @@ construir_banco <- function(data) {
   message("Carregando os dados...")
   # Aplicar a função carregarRHC
   data <- leraquivoDBF()
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  # Verificação se a lista está vazia (NULL)
+  if (is.null(data)) {
+    message("Nenhum dado foi encontrado. A função será interrompida.")
+    return(NULL)
+  }
+
+
+  message(".")
+  message(".")
   message("Dados carregados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Renomeando colunas...")
   # Aplicar a função renomear_colunas
   data <- renomear_colunas(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Colunas renomeadas com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Modificando tipos de variáveis...")
   # Aplicar a função modificar_tipo_variavel
   data <- modificar_tipo_variavel(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Tipos de variáveis modificados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Recodificando variáveis...")
   # Aplicar a função recodificar_variaveis
   data <- recodificar_variaveis(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Variáveis recodificadas com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Renomeando siglas dos estados...")
   # Aplicar a função mapear_siglas_estados
   data <- renomear_siglas_estados(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Siglas dos estados renomeadas com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Ajustando códigos CID de 3 dígitos...")
   # Aplicar a função ajustar_CID_3digitos
   data <- renomear_CID_3digitos(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Códigos CID de 3 dígitos ajustados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Ajustando códigos CID de 4 dígitos...")
   # Aplicar a função ajustar_CID_4digitos
   data <- renomear_CID_4digitos(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Códigos CID de 4 dígitos ajustados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Ajustando códigos CNES...")
   # Aplicar a função renomear_CNES
   data <- renomear_CNES(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Códigos códigos CNES ajustados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
   message("Ajustando códigos Tipo Histológico...")
   # Aplicar a função renomear_tipo_histologico
   data <- renomear_tipo_histologico(data)
-  message("/")
-  message("/")
-  message("/")
-  message("/")
+  message(".")
+  message(".")
   message("Códigos códigos Tipo Histológico ajustados com sucesso.")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("/")
-  message("BANCO DE DADOS CRIADO COM SUCESSO. FORAM ACRESCENTADO 6 COLUNAS NO DATAFRAME FINAL.")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  message("Banco de Dados criado com sucesso. foram adicionadas 7 colunas no dataframe final.")
+  message(".")
+  message(".")
+  message(".")
+  message(".")
+  # Aplicar a função analise_completude
+  analise_completude(data)
 
   return(data)
 }
@@ -2397,10 +2588,9 @@ construir_banco <- function(data) {
 
 
 
-
 #' Filtrar Dados com Base em Vários Critérios
 #'
-#' Esta função filtra um dataframe com base em critérios específicos fornecidos pelo usuário, incluindo códigos CID-3, códigos CID-4, anos de triagem, anos de diagnóstico, anos da primeira consulta, idade, tipo de caso, sexo, estado de residência, unidade hospitalar, primeiro tratamento hospitalar, ano de início do tratamento e origem do encaminhamento.
+#' Esta função filtra um dataframe com base em critérios específicos fornecidos pelo usuário, incluindo códigos CID-3, códigos CID-4, anos de triagem, anos de diagnóstico, anos da primeira consulta, idade, tipo de caso, sexo, estado de residência, unidade hospitalar, primeiro tratamento hospitalar, ano de início do tratamento, origem do encaminhamento e anos do banco de dados.
 #'
 #' @param dados Um dataframe que contém as variáveis a serem filtradas.
 #' @param cid3digitos Um vetor de códigos CID-3 para filtrar a coluna `Localizacao_Primaria_3D`. Padrão é NULL.
@@ -2421,6 +2611,8 @@ construir_banco <- function(data) {
 #' @param ano_inicio_tratamento Ano inicial para filtrar a coluna `Ano_Inicio_Tratamento`. Padrão é NULL.
 #' @param ano_fim_tratamento Ano final para filtrar a coluna `Ano_Inicio_Tratamento`. Padrão é NULL.
 #' @param origem_do_encaminhamento Filtro para a coluna `Origem_do_Encaminhamento`. Padrão é NULL.
+#' @param ano_do_banco_inicio Ano inicial para filtrar a coluna `Ano_do_Banco`. Padrão é NULL.
+#' @param ano_do_banco_fim Ano final para filtrar a coluna `Ano_do_Banco`. Padrão é NULL.
 #' @return Retorna o dataframe filtrado com base nos critérios fornecidos.
 #' @examples
 #' # Filtrar o banco de dados
@@ -2442,7 +2634,9 @@ construir_banco <- function(data) {
 #'                                  primeiro_tratamento_hospital = "Cirurgia",  # Filtra os dados pela coluna `Primeiro_Tratamento_Hospital`, selecionando "Cirurgia"
 #'                                  ano_inicio_tratamento = 2014,  # Filtra os dados pela coluna `Ano_Inicio_Tratamento` entre os anos de 2014 e 2019
 #'                                  ano_fim_tratamento = 2019,
-#'                                  origem_do_encaminhamento = "SUS")  # Filtra os dados pela coluna `Origem_do_Encaminhamento`, selecionando "SUS"
+#'                                  origem_do_encaminhamento = "SUS",  # Filtra os dados pela coluna `Origem_do_Encaminhamento`, selecionando "SUS"
+#'                                  ano_do_banco_inicio = 2010,  # Filtra os dados pela coluna `Ano_do_Banco` entre os anos de 2010 e 2020
+#'                                  ano_do_banco_fim = 2020)
 #' @export
 #' @name filtrar_banco
 filtrar_banco <- function(dados = Seu_data_frame_aqui,
@@ -2458,11 +2652,12 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
                           uf_unidade_hospital = NULL,
                           primeiro_tratamento_hospital = NULL,
                           ano_inicio_tratamento = NULL, ano_fim_tratamento = NULL,
-                          origem_do_encaminhamento = NULL) 
+                          origem_do_encaminhamento = NULL,
+                          ano_do_banco_inicio = NULL, ano_do_banco_fim = NULL)
 
 
 {message("Verificando a existência dos campos necessários e validade dos valores dos parâmetros...")
-  
+
   # Lista de parâmetros e seus campos correspondentes no dataframe
   parametros <- list(cid3digitos = "Localizacao_Primaria_3D",
                      cid4digitos = "Localizacao_Primaria_4D",
@@ -2478,8 +2673,11 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
                      uf_unidade_hospital = "UF_Unidade_Hospital",
                      primeiro_tratamento_hospital = "Primeiro_Tratamento_Hospital",
                      ano_inicio_tratamento = "Ano_Inicio_Tratamento",
-                     origem_do_encaminhamento = "Origem_do_Encaminhamento")
-  
+                     origem_do_encaminhamento = "Origem_do_Encaminhamento",
+                     ano_do_banco_inicio = "Ano_do_Banco",
+                     ano_do_banco_fim = "Ano_do_Banco")
+
+
   # Verificar se os parâmetros fornecidos existem no dataframe
   for (parametro in names(parametros)) {
     campo <- parametros[[parametro]]
@@ -2493,13 +2691,13 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
       }
     }
   }
-  
-  
+
+
   message("Todos os campos e valores são válidos. Iniciando a filtragem dos dados.")
-  
-  
+
+
   message("Iniciando a filtragem dos dados.")
-  
+
   # Verificar se cid3digitos possui exatamente 3 caracteres
   if (!is.null(cid3digitos)) {
     if (any(nchar(cid3digitos) != 3)) {
@@ -2511,7 +2709,7 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
     }
     dados <- subset(dados, Localizacao_Primaria_3D %in% cid3digitos)
   }
-  
+
   # Verificar se cid4digitos possui exatamente 4 caracteres com um ponto entre o penúltimo e o último
   if (!is.null(cid4digitos)) {
     if (any(nchar(cid4digitos) != 5 | !grepl("\\.[A-Za-z0-9]{1}$", cid4digitos))) {
@@ -2523,31 +2721,31 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
     }
     dados <- subset(dados, Localizacao_Primaria_4D %in% cid4digitos)
   }
-  
+
   # Aplicar filtragem adicional com base no Ano_Triagem, se fornecido
   if (!is.null(ano_inicio_triagem) && !is.null(ano_fim_triagem)) {
     message(paste("Filtrando dados com base no Ano_Triagem entre", ano_inicio_triagem, "e", ano_fim_triagem, "."))
     dados <- subset(dados, Ano_Triagem >= ano_inicio_triagem & Ano_Triagem <= ano_fim_triagem)
   }
-  
+
   # Aplicar filtragem adicional com base no Ano_Primeiro_Diagnostico, se fornecido
   if (!is.null(ano_inicio_diagnostico) && !is.null(ano_fim_diagnostico)) {
     message(paste("Filtrando dados com base no Ano_Primeiro_Diagnostico entre", ano_inicio_diagnostico, "e", ano_fim_diagnostico, "."))
     dados <- subset(dados, Ano_Primeiro_Diagnostico >= ano_inicio_diagnostico & Ano_Primeiro_Diagnostico <= ano_fim_diagnostico)
   }
-  
+
   # Aplicar filtragem adicional com base no Ano_Primeira_Consulta, se fornecido
   if (!is.null(ano_inicio_primeira_consulta) && !is.null(ano_fim_primeira_consulta)) {
     message(paste("Filtrando dados com base no Ano_Primeira_Consulta entre", ano_inicio_primeira_consulta, "e", ano_fim_primeira_consulta, "."))
     dados <- subset(dados, Ano_Primeira_Consulta >= ano_inicio_primeira_consulta & Ano_Primeira_Consulta <= ano_fim_primeira_consulta)
   }
-  
+
   # Aplicar filtragem adicional com base na Idade, se fornecido
   if (!is.null(idade_inicio) && !is.null(idade_fim)) {
     message(paste("Filtrando dados com base na Idade entre", idade_inicio, "e", idade_fim, "."))
     dados <- subset(dados, Idade >= idade_inicio & Idade <= idade_fim)
   }
-  
+
   # Aplicar filtragem adicional com base no Tipo_de_Caso, se fornecido
   if (!is.null(tipo_de_caso)) {
     if (!tipo_de_caso %in% c("Analítico", "Não Analítico")) {
@@ -2556,7 +2754,7 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
     message(paste("Filtrando dados com base no Tipo_de_Caso:", tipo_de_caso, "."))
     dados <- subset(dados, Tipo_de_Caso == tipo_de_caso)
   }
-  
+
   # Aplicar filtragem adicional com base no Sexo, se fornecido
   if (!is.null(sexo)) {
     if (!sexo %in% c("Masculino", "Feminino")) {
@@ -2565,41 +2763,47 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
     message(paste("Filtrando dados com base no Sexo:", sexo, "."))
     dados <- subset(dados, Sexo == sexo)
   }
-  
+
   # Aplicar filtragem adicional com base no Estado_Residencia, se fornecido
   if (!is.null(estado_residencia)) {
     message(paste("Filtrando dados com base no Estado de Residência:", estado_residencia, "."))
     dados <- subset(dados, Estado_Residencia %in% estado_residencia)
   }
-  
+
   # Aplicar filtragem adicional com base no UF_Unidade_Hospital, se fornecido
   if (!is.null(uf_unidade_hospital)) {
     message(paste("Filtrando dados com base na UF da Unidade Hospitalar:", uf_unidade_hospital, "."))
     dados <- subset(dados, UF_Unidade_Hospital %in% uf_unidade_hospital)
   }
-  
+
   # Aplicar filtragem adicional com base no Primeiro_Tratamento_Hospital, se fornecido
   if (!is.null(primeiro_tratamento_hospital)) {
     message(paste("Filtrando dados com base no Primeiro Tratamento Hospitalar:", primeiro_tratamento_hospital, "."))
     dados <- subset(dados, Primeiro_Tratamento_Hospital == primeiro_tratamento_hospital)
   }
-  
+
   # Aplicar filtragem adicional com base no Ano_Inicio_Tratamento, se fornecido
   if (!is.null(ano_inicio_tratamento) && !is.null(ano_fim_tratamento)) {
     message(paste("Filtrando dados com base no Ano_Inicio_Tratamento entre", ano_inicio_tratamento, "e", ano_fim_tratamento, "."))
     dados <- subset(dados, Ano_Inicio_Tratamento >= ano_inicio_tratamento & Ano_Inicio_Tratamento <= ano_fim_tratamento)
   }
-  
+
   # Aplicar filtragem adicional com base na Origem_do_Encaminhamento, se fornecido
   if (!is.null(origem_do_encaminhamento)) {
     message(paste("Filtrando dados com base na Origem do Encaminhamento:", origem_do_encaminhamento, "."))
     dados <- subset(dados, Origem_do_Encaminhamento == origem_do_encaminhamento)
   }
-  
+
+  # Aplicar filtragem adicional com base no Ano_do_Banco, se fornecido
+  if (!is.null(ano_do_banco_inicio) && !is.null(ano_do_banco_fim)) {
+    message(paste("Filtrando dados com base no Ano_do_Banco entre", ano_do_banco_inicio, "e", ano_do_banco_fim, "."))
+    dados <- subset(dados, Ano_do_Banco >= ano_do_banco_inicio & Ano_do_Banco <= ano_do_banco_fim)
+  }
+
+
   message("Filtragem dos dados concluída com sucesso.")
-  
+
   # Retornar o dataframe filtrado
   return(dados)
 }
-
 
