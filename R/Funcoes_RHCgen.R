@@ -2310,7 +2310,7 @@ analise_completude <- function(dados) {
                 col = colorRampPalette(c("darkgreen", "green", "yellow", "orange", "red"))(length(Ausentes$Dados_Ausentes)),
                 border = NA,
                 xlab = NA,
-                main = "Total de dados ausentes, porcentagem e Classificação de Completude por Variável",
+                main = "Quantitativo e Percentual de Dados Ausentes com Classificação de Completude por Variável",
                 cex.names = 0.8)
 
 
