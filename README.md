@@ -2,6 +2,7 @@
 
 O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebido com o objetivo de automatizar e padronizar o processamento de dados provenientes do Registro Hospitalar de Câncer (RHC) no Brasil. Este pacote foi criado para abordar os desafios inerentes à manipulação de grandes volumes de dados heterogêneos, característicos dos registros hospitalares de câncer, proporcionando uma ferramenta eficiente, reprodutível e acessível para pesquisadores e profissionais de saúde.
 
+## Funções
 O RHCgen é um pacote de software para R que automatiza o processamento e transformação de dados do Registro Hospitalar de Câncer no Brasil. Ele fornece um conjunto de funções que permitem:
 1. **Leitura e combinação de arquivos**: Facilita a leitura de múltiplos arquivos DBF do RHC e os combina em um único dataframe, assegurando a consistência das colunas.
 2. **Renomeação de colunas**: Simplifica a leitura e análise dos dados através da renomeação de colunas com base em mapeamentos predefinidos.
@@ -17,4 +18,3 @@ O RHCgen é um pacote de software para R que automatiza o processamento e transf
 ```r
 # install.packages("remotes")
 remotes::install_github("andersonlineu/RHCgen")
-```r
