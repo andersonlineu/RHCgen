@@ -31,10 +31,8 @@ Obs.: É necessário ter instalado previamente o pacote "remotes".
 
 - [IntegradorRHC](https://irhc.inca.gov.br/RHCNet/)
 
-
-- 
 ### Dúvidas e sugestões
 
 Email: andersonlineu@gmail.com
-- [Lattes](http://lattes.cnpq.br/9727490230028203)
-- [Orcid iD](https://orcid.org/0000-0002-1703-9310)
+- Link: [Lattes](http://lattes.cnpq.br/9727490230028203)
+- Link: [Orcid iD](https://orcid.org/0000-0002-1703-9310)
