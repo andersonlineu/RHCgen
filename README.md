@@ -23,7 +23,8 @@ O RHCgen é um pacote de software para R que automatiza o processamento e transf
 # install.packages("remotes")
 remotes::install_github("andersonlineu/RHCgen")
 ```
-
+```markdown
+<small>É necessário ter instalado previamente o pacote "remotes".</small>
 ---
 
 ### Dúvidas e sugestões
