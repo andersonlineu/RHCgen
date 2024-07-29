@@ -34,5 +34,5 @@ Obs.: É necessário ter instalado previamente o pacote "remotes".
 ### Dúvidas e sugestões
 
 Email: andersonlineu@gmail.com
-- Link: [Lattes](http://lattes.cnpq.br/9727490230028203)
-- Link: [Orcid iD](https://orcid.org/0000-0002-1703-9310)
+- [Lattes](http://lattes.cnpq.br/9727490230028203)
+- [Orcid iD](https://orcid.org/0000-0002-1703-9310)
