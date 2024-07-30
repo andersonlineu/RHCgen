@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{construir_banco}
 \alias{construir_banco}
-\title{Construir Banco de Dados Automaticamente}
+\title{Constrói o Banco de Dados Todo Automaticamente}
 \usage{
 construir_banco()
 }

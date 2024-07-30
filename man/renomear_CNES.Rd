@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_CNES}
 \alias{renomear_CNES}
-\title{Renomear CNES}
+\title{Converte os Códigos CNES para os Nomes Completos.}
 \usage{
 renomear_CNES(dados)
 }

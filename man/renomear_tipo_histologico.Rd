@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_tipo_histologico}
 \alias{renomear_tipo_histologico}
-\title{Renomear Tipo Histológico}
+\title{Converte os Tipos Histológicos para os Nomes Completos.}
 \usage{
 renomear_tipo_histologico(dados)
 }

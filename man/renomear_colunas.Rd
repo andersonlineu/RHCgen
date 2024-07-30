@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_colunas}
 \alias{renomear_colunas}
-\title{Renomear Colunas de um DataFrame}
+\title{Renomear as Colunas de um DataFrame}
 \usage{
 renomear_colunas(data)
 }

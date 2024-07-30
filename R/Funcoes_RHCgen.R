@@ -1,6 +1,6 @@
 
 
-#' Ler e Juntar Arquivo DBF
+#' Ler e Junta os Arquivo DBF
 #'
 #' @description Esta função ler e junta arquivos DBF do RHC e adiciona uma nova coluna: Ano_do_Banco, a partir do ano do arquivo DBF.
 #'
@@ -103,7 +103,7 @@ leraquivoDBF <- function() {
 }
 
 
-#' Renomear Colunas de um DataFrame
+#' Renomear as Colunas de um DataFrame
 #'
 #' Esta função renomeia as colunas de um dataframe utilizando uma lista predefinida de mapeamentos entre os nomes originais das colunas e seus novos nomes descritivos. O objetivo é melhorar a legibilidade. A função verifica cada coluna listada no mapeamento e, se encontrada no dataframe, substitui seu nome pelo novo nome especificado. As colunas que não estão presentes no dataframe são ignoradas, e uma mensagem é exibida para cada coluna processada, indicando se a renomeação foi bem-sucedida ou não.
 #'
@@ -187,7 +187,7 @@ renomear_colunas <- function(data) {
 
 
 
-#' Modificar Tipos de Variáveis em um DataFrame
+#' Modifica os Tipos de Variáveis em um Dataframe
 #'
 #' Esta função converte todas as variáveis de um dataframe para o tipo character, exceto as colunas de data, que são convertidas primeiro para character e depois para data.
 #' A coluna `Idade` é convertida para o tipo numérico.
@@ -244,7 +244,7 @@ modificar_tipo_variavel <- function(data) {
 
 
 
-#' Recodificar Variáveis em um DataFrame
+#' Recodifica as Variáveis em um DataFrame
 #'
 #' Esta função recodifica variáveis categóricas em um dataframe com base no dicionário de variáveis predefinido pelo RHC. As variáveis são transformadas em fatores com níveis específicos para melhorar a legibilidade e consistência dos dados.
 #'
@@ -550,7 +550,7 @@ recodificar_variaveis <- function(data) {
 
 
 
-#' Renomear Siglas de Estados para Nomes Completos
+#' Converte as Siglas de Estados para Nomes Completos
 #'
 #' Esta função utiliza as siglas dos estados brasileiros das variáveis `Estado_Residencia` e `UF_Unidade_Hospital` de um dataframe e cria novas colunas com os seus nomes completos. Os nomes completos dos estados são adicionados em novas colunas `Nome_Estado_Residencia` e `Nome_Estado_Hospital`.
 #'
@@ -607,7 +607,7 @@ renomear_siglas_estados <- function(dados) {
 
 
 
-#' Renomear CID-O de 3 Dígitos
+#' Converte os CID-O de 3 Dígitos de Um Dataframe
 #'
 #' Esta função mapeia os códigos CID-O de 3 dígitos para seus nomes completos na coluna `Localizacao_Primaria_3D` de um dataframe. Os nomes completos dos CID-O de 3 dígitos são adicionados em uma nova coluna `CID3d`.
 #'
@@ -705,7 +705,7 @@ renomear_CID_3digitos <- function(dados) {
 
 
 
-#' Renomear CID  de 4 Dígitos em um DataFrame
+#' Converte os CID-O de 4 Dígitos de Um Dataframe
 #'
 #' Esta função mapeia os códigos CID  de 4 dígitos para seus nomes completos na coluna `Localizacao_Primaria_4D` de um dataframe. Os nomes completos dos CID-O de 4 dígitos são adicionados em uma nova coluna `CID4d`.
 #'
@@ -1515,7 +1515,7 @@ renomear_CID_4digitos <- function(dados) {
 
 
 
-#' Renomear CNES
+#' Converte os Códigos CNES para os Nomes Completos.
 #'
 #' Esta função mapeia os códigos CNES para os nomes completos dos estabelecimentos na coluna `CNES_Hospital` de um dataframe. Os nomes completos dos estabelecimentos são adicionados em uma nova coluna `Estabelecimento_Hospitalar`.
 #'
@@ -1953,7 +1953,7 @@ renomear_CNES <- function(dados) {
 
 
 
-#' Renomear Tipo Histológico
+#' Converte os Tipos Histológicos para os Nomes Completos.
 #'
 #' Esta função mapeia os códigos de Tipo Histológico para os nomes completos na coluna `Tipo_Histologico` de um dataframe. Os nomes completos dos tipos histológicos são adicionados em uma nova coluna `Tipo_Histologico_Completo`.
 #'
@@ -2503,7 +2503,7 @@ analise_completude_ano <- function(dados) {
 
 
 
-#' Construir Banco de Dados Automaticamente
+#' Constrói o Banco de Dados Todo Automaticamente
 #'
 #' Esta função aplica uma série de ajustes a um dataframe para construir um banco de dados finalizado. As etapas incluem ler e juntar os arquivo DBF, renomear colunas, modificar tipos de variáveis, recodificar variáveis, renomear siglas dos estados, renomear códigos CID de 3 e 4 dígitos, renomear códigos CNES e Tipo Histolófico e adicionar novas variáveis ao final do dataframe.
 #'
@@ -2615,7 +2615,7 @@ construir_banco <- function() {
 
 
 
-#' Filtrar Dados com Base em Vários Critérios
+#' Filtrar os Dados com Base em Vários Critérios
 #'
 #' Esta função filtra um dataframe com base em critérios específicos fornecidos pelo usuário, incluindo códigos CID-3, códigos CID-4, anos de triagem, anos de diagnóstico, anos da primeira consulta, idade, tipo de caso, sexo, estado de residência, unidade hospitalar, primeiro tratamento hospitalar, ano de início do tratamento, origem do encaminhamento e anos do banco de dados.
 #'

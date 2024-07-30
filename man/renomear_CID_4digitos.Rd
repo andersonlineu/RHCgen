@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_CID_4digitos}
 \alias{renomear_CID_4digitos}
-\title{Renomear CID  de 4 Dígitos em um DataFrame}
+\title{Converte os CID-O de 4 Dígitos de Um Dataframe}
 \usage{
 renomear_CID_4digitos(dados)
 }

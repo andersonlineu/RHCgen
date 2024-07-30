@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{recodificar_variaveis}
 \alias{recodificar_variaveis}
-\title{Recodificar Variáveis em um DataFrame}
+\title{Recodifica as Variáveis em um DataFrame}
 \usage{
 recodificar_variaveis(data)
 }

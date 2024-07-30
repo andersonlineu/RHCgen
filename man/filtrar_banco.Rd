@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{filtrar_banco}
 \alias{filtrar_banco}
-\title{Filtrar Dados com Base em Vários Critérios}
+\title{Filtrar os Dados com Base em Vários Critérios}
 \usage{
 filtrar_banco(
   dados = Seu_data_frame_aqui,

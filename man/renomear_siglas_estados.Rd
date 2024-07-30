@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_siglas_estados}
 \alias{renomear_siglas_estados}
-\title{Renomear Siglas de Estados para Nomes Completos}
+\title{Converte as Siglas de Estados para Nomes Completos}
 \usage{
 renomear_siglas_estados(dados)
 }

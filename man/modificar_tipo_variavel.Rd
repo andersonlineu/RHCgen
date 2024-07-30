@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{modificar_tipo_variavel}
 \alias{modificar_tipo_variavel}
-\title{Modificar Tipos de Variáveis em um DataFrame}
+\title{Modifica os Tipos de Variáveis em um Dataframe}
 \usage{
 modificar_tipo_variavel(data)
 }

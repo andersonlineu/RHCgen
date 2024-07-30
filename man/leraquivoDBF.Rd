@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{leraquivoDBF}
 \alias{leraquivoDBF}
-\title{Ler e Juntar Arquivo DBF}
+\title{Ler e Junta os Arquivo DBF}
 \usage{
 leraquivoDBF()
 }
