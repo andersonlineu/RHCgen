@@ -56,3 +56,7 @@ Obs.: É necessário ter instalado previamente o pacote "remotes".
 - [Orcid iD](https://orcid.org/0000-0002-1703-9310)
 
 - [Reportar Bugs](https://github.com/andersonlineu/RHCgen/issues)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 45687e0ffdd0bbe5322452b615e24a22417c79a7

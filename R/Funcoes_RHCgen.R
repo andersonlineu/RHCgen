@@ -103,7 +103,7 @@ leraquivoDBF <- function() {
 }
 
 
-#' Renomear as Colunas de um DataFrame
+#' Renomeia as Colunas de um DataFrame
 #'
 #' Esta função renomeia as colunas de um dataframe utilizando uma lista predefinida de mapeamentos entre os nomes originais das colunas e seus novos nomes descritivos. O objetivo é melhorar a legibilidade. A função verifica cada coluna listada no mapeamento e, se encontrada no dataframe, substitui seu nome pelo novo nome especificado. As colunas que não estão presentes no dataframe são ignoradas, e uma mensagem é exibida para cada coluna processada, indicando se a renomeação foi bem-sucedida ou não.
 #'

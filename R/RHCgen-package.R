@@ -34,4 +34,5 @@
 #' @seealso Tutorial: \code{\link{Baixar_Arquivos_DBF}}
 #'
 #' Reportar Bugs: \url{https://github.com/andersonlineu/RHCgen/issues}
+#'
 "_PACKAGE"
