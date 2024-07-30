@@ -16,7 +16,7 @@ Retorna um dataframe com as variáveis recodificadas.
 Esta função recodifica variáveis categóricas em um dataframe com base no dicionário de variáveis predefinido pelo RHC. As variáveis são transformadas em fatores com níveis específicos para melhorar a legibilidade e consistência dos dados.
 }
 \examples{
-# Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+# Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 
 dados_RHC_combinados <- recodificar_variaveis(dados_RHC_combinados)
 }

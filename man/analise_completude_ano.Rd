@@ -19,5 +19,5 @@ Esta função calcula e avalia a completude de cada variável por ano, distribui
 # Supondo que você tenha um dataframe chamado dados_RHC_combinados,
 # Use a função da seguinte forma:
 
-Nome_da_Sua_Tabela_de_Completude <- analise_completude_ano(dados_RHC_combinados)
+Nome_da_Sua_Tabela_de_Completud_ano <- analise_completude_ano(dados_RHC_combinados)
 }

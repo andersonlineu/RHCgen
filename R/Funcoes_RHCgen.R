@@ -23,23 +23,13 @@ leraquivoDBF <- function() {
     library(foreign)
   }
 
-  # Função interna para verificar a consistência da estrutura de colunas
-  verificarEstruturaColunas <- function(dados_list) {
-    if (length(dados_list) < 1) return(NULL)  # Retorna NULL se a lista estiver vazia
-    ref_columns <- names(dados_list[[1]])
-    for (dados in dados_list) {
-      if (!identical(names(dados), ref_columns)) {
-        stop("Os dataframes não têm a mesma estrutura de colunas.")
-      }
-    }
-  }
-
   # Listar todos os arquivos .dbf que começam com "rhc"
   arquivosRHC <- list.files(pattern = "^rhc.*\\.dbf$", ignore.case = TRUE, full.names = TRUE)
 
   # Verificar se existem arquivos para processar
   if (length(arquivosRHC) == 0) {
-    message("Nenhum arquivo 'rhc*.dbf' encontrado.")
+    message(paste("\033[1;31m", "> Nenhum arquivo 'rhc*.dbf' encontrado.", "\033[0m"))
+
     return(NULL)
   }
 
@@ -51,7 +41,8 @@ leraquivoDBF <- function() {
     tryCatch({
       data <- foreign::read.dbf(arquivo)
       if (nrow(data) == 0) {
-        message("Aviso: O arquivo está vazio.")
+        message(paste("\033[1;33m", "> Aviso: O arquivo está vazio.", "\033[0m"))
+
         return(NULL)
       }
 
@@ -72,8 +63,8 @@ leraquivoDBF <- function() {
       message("Leitura finalizada!")
       return(data)
     }, error = function(e) {
-      message(paste("Erro ao ler o arquivo:", arquivo))
-      message(paste("Detalhe do erro:", e$message))
+      message(paste("\033[1;31m", "Erro ao ler o arquivo:", arquivo, "\033[0m"))
+      message(paste("\033[1;31m", "Detalhe do erro:", e$message, "\033[0m"))
       return(NULL)
     })
   })
@@ -81,20 +72,35 @@ leraquivoDBF <- function() {
   # Remover NULLs da lista de dataframes
   lista_dataframes <- Filter(Negate(is.null), lista_dataframes)
 
-  # Verificar a consistência das colunas
-  verificarEstruturaColunas(lista_dataframes)
+  # Identificar todas as colunas presentes em todos os dataframes
+  todas_colunas <- unique(unlist(lapply(lista_dataframes, names)))
+
+  # Adicionar colunas ausentes com NA e garantir que todas as colunas tenham o mesmo tamanho
+  lista_dataframes <- lapply(lista_dataframes, function(data) {
+    colunas_faltando <- setdiff(todas_colunas, names(data))
+    for (coluna in colunas_faltando) {
+      data[[coluna]] <- NA
+    }
+    return(data)
+  })
+
+  # Verificar se todas as colunas têm o mesmo tamanho
+  tamanhos_colunas <- sapply(lista_dataframes, ncol)
+  if (length(unique(tamanhos_colunas)) > 1) {
+    stop("\033[1;31mErro: Os dataframes não têm o mesmo número de colunas após a adição de colunas ausentes.\033[0m")
+      }
 
   # Unir os data frames usando rbind
   if (length(lista_dataframes) > 0) {
     dataRHCCombinados <- do.call(rbind, lista_dataframes)
-    message("Tarefa finalizada com sucesso! Foi adicionada uma coluna chamada Ano_do_Banco no final do dataframe.")
+    message(paste("\033[1;32m", "> Carregamento dos arquivos e estruturação do dataframe finalizados com sucesso! Foi adicionada uma coluna chamada Ano_do_Banco no final do dataframe.", "\033[0m"))
+
     return(dataRHCCombinados)
   } else {
-    message("Nenhum dataframe válido para combinar.")
+    message("\033[1;31mNenhum dataframe válido para combinar.\033[0m")
     return(NULL)
   }
 }
-
 
 
 #' Renomear Colunas de um DataFrame
@@ -155,7 +161,8 @@ renomear_colunas <- function(data) {
     DTDIAGNO = "Data_Diagnostico",
     DATAINITRT = "Data_Inicio_Primeiro_Tratamento",
     DATAOBITO = "Data_Obito",
-    VALOR_TOT = "Valor_Total"
+    VALOR_TOT = "Valor_Total",
+    ESTADIAG = "Estadiamento_Clinico_TNM_grupo(1985-1999)"
   )
 
   # Contador de colunas renomeadas
@@ -173,7 +180,8 @@ renomear_colunas <- function(data) {
     }
   }
 
-  message(paste("Renomeação de colunas concluída com sucesso. Total:", contador_renomeadas))
+  message(paste("\033[1;32m", "Renomeação de colunas concluída com sucesso. Total:", contador_renomeadas, "\033[0m"))
+
   return(data)
 }
 
@@ -222,17 +230,17 @@ modificar_tipo_variavel <- function(data) {
       message(paste("Convertendo a variável:", column, "para data."))
       data[[column]] <- as.Date(data[[column]], format = "%d/%m/%Y")
       if (all(is.na(data[[column]]))) {
-        message(paste("Aviso: A conversão da variável", column, "resultou em NAs. Verifique o formato da data."))
+        message(paste("\033[1;31mAviso: A conversão da variável", column, "resultou em NAs. Verifique o formato da data.\033[0m"))
       } else {
         contador_datas_convertidas <- contador_datas_convertidas + 1
       }
     }
   }
 
-  message("Conversão de tipos de variáveis concluída com sucesso.")
+  message(paste("\033[1;32m", "> Conversão de tipos de variáveis concluída com sucesso.", "\033[0m"))
+
   return(data)
 }
-
 
 
 
@@ -245,229 +253,264 @@ modificar_tipo_variavel <- function(data) {
 #' @export
 #' @name recodificar_variaveis
 #' @examples
-#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:
+#' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 #'
 #' dados_RHC_combinados <- recodificar_variaveis(dados_RHC_combinados)
 recodificar_variaveis <- function(data) {
   message("Iniciando a recodificação das variáveis.")
 
+  # Lista de variáveis esperadas
+  variaveis_esperadas <- c("Tipo_de_Caso", "Sexo", "Raca_Cor", "Escolaridade",
+                           "Historico_Familiar_Cancer", "Consumo_Alcool", "Tabagismo",
+                           "Origem_do_Encaminhamento", "Exames_Relevantes_para_Diagnostico",
+                           "Estado_conjugal", "Diagnosticos_e_Tratamentos_Anterior",
+                           "Base_Mais_Importante_Diagnostico", "Lateralidade", "Mais_de_Um_Tumor",
+                           "Razao_Nao_Tratamento", "Primeiro_Tratamento_Hospital",
+                           "Estado_Doenca_Final_Tratamento", "Base_Mais_Importante_Diagnostico_Sem_Patologicas")
+
+  # Verificar variáveis presentes e ausentes
+  variaveis_presentes <- variaveis_esperadas[variaveis_esperadas %in% names(data)]
+  variaveis_ausentes <- variaveis_esperadas[!variaveis_esperadas %in% names(data)]
+
+  if (length(variaveis_ausentes) > 0) {
+    message(paste("As seguintes variáveis estão ausentes no dataframe:", paste(variaveis_ausentes, collapse = ", ")))
+  }
+
   # Contador de variáveis recodificadas
   contador_recodificacoes <- 0
+  variaveis_recodificadas <- c()
 
   # 'Tipo_de_Caso'
   if ("Tipo_de_Caso" %in% names(data)) {
     message("Recodificando 'Tipo_de_Caso'.")
     data$Tipo_de_Caso <- ifelse(data$Tipo_de_Caso == "1", "Analítico",
-                                 ifelse(data$Tipo_de_Caso == "2", "Não Analítico", data$Tipo_de_Caso))
+                                ifelse(data$Tipo_de_Caso == "2", "Não Analítico", data$Tipo_de_Caso))
     data$Tipo_de_Caso <- factor(data$Tipo_de_Caso, levels = c("Analítico", "Não Analítico", "Outro"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Tipo_de_Caso")
   }
 
   # 'Sexo'
   if ("Sexo" %in% names(data)) {
     message("Recodificando 'Sexo'.")
     data$Sexo <- ifelse(data$Sexo == "1", "Masculino",
-                         ifelse(data$Sexo == "2", "Feminino", data$Sexo))
+                        ifelse(data$Sexo == "2", "Feminino", data$Sexo))
     data$Sexo <- factor(data$Sexo, levels = c("Masculino", "Feminino", "Outro"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Sexo")
   }
 
   # 'Raca_Cor'
   if ("Raca_Cor" %in% names(data)) {
     message("Recodificando 'Raca_Cor'.")
     data$Raca_Cor <- ifelse(data$Raca_Cor == "1", "Branca",
-                             ifelse(data$Raca_Cor == "2", "Preta",
-                                    ifelse(data$Raca_Cor == "3", "Amarela",
-                                           ifelse(data$Raca_Cor == "4", "Parda",
-                                                  ifelse(data$Raca_Cor == "5", "Indígena",
-                                                         ifelse(data$Raca_Cor == "9", "Sem informação", data$Raca_Cor))))))
+                            ifelse(data$Raca_Cor == "2", "Preta",
+                                   ifelse(data$Raca_Cor == "3", "Amarela",
+                                          ifelse(data$Raca_Cor == "4", "Parda",
+                                                 ifelse(data$Raca_Cor == "5", "Indígena",
+                                                        ifelse(data$Raca_Cor == "9", "Sem informação", data$Raca_Cor))))))
     data$Raca_Cor <- factor(data$Raca_Cor, levels = c("Branca", "Preta", "Amarela", "Parda", "Indígena", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Raca_Cor")
   }
 
   # 'Escolaridade'
   if ("Escolaridade" %in% names(data)) {
     message("Recodificando 'Escolaridade'.")
     data$Escolaridade <- ifelse(data$Escolaridade == "1", "Nenhuma",
-                                 ifelse(data$Escolaridade == "2", "Fundamental incompleto",
-                                        ifelse(data$Escolaridade == "3", "Fundamental completo",
-                                               ifelse(data$Escolaridade == "4", "Nível médio",
-                                                      ifelse(data$Escolaridade == "5", "Nível superior incompleto",
-                                                             ifelse(data$Escolaridade == "6", "Nível superior completo",
-                                                                    ifelse(data$Escolaridade == "9", "Sem informação", data$Escolaridade)))))))
+                                ifelse(data$Escolaridade == "2", "Fundamental incompleto",
+                                       ifelse(data$Escolaridade == "3", "Fundamental completo",
+                                              ifelse(data$Escolaridade == "4", "Nível médio",
+                                                     ifelse(data$Escolaridade == "5", "Nível superior incompleto",
+                                                            ifelse(data$Escolaridade == "6", "Nível superior completo",
+                                                                   ifelse(data$Escolaridade == "9", "Sem informação", data$Escolaridade)))))))
     data$Escolaridade <- factor(data$Escolaridade, levels = c("Nenhuma", "Fundamental incompleto", "Fundamental completo", "Nível médio", "Nível superior incompleto", "Nível superior completo", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Escolaridade")
   }
 
   # 'Historico_Familiar_Cancer'
   if ("Historico_Familiar_Cancer" %in% names(data)) {
     message("Recodificando 'Historico_Familiar_Cancer'.")
     data$Historico_Familiar_Cancer <- ifelse(data$Historico_Familiar_Cancer == "1", "Sim",
-                                              ifelse(data$Historico_Familiar_Cancer == "2", "Não",
-                                                     ifelse(data$Historico_Familiar_Cancer == "9", "Sem informação", data$Historico_Familiar_Cancer)))
+                                             ifelse(data$Historico_Familiar_Cancer == "2", "Não",
+                                                    ifelse(data$Historico_Familiar_Cancer == "9", "Sem informação", data$Historico_Familiar_Cancer)))
     data$Historico_Familiar_Cancer <- factor(data$Historico_Familiar_Cancer, levels = c("Sim", "Não", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Historico_Familiar_Cancer")
   }
 
   # 'Consumo_Alcool'
   if ("Consumo_Alcool" %in% names(data)) {
     message("Recodificando 'Consumo_Alcool'.")
     data$Consumo_Alcool <- ifelse(data$Consumo_Alcool == "1", "Nunca",
-                                   ifelse(data$Consumo_Alcool == "2", "Ex-consumidor",
-                                          ifelse(data$Consumo_Alcool == "3", "Sim",
-                                                 ifelse(data$Consumo_Alcool == "4", "Não avaliado",
-                                                        ifelse(data$Consumo_Alcool == "8", "Não se aplica",
-                                                               ifelse(data$Consumo_Alcool == "9", "Sem informação", data$Consumo_Alcool))))))
+                                  ifelse(data$Consumo_Alcool == "2", "Ex-consumidor",
+                                         ifelse(data$Consumo_Alcool == "3", "Sim",
+                                                ifelse(data$Consumo_Alcool == "4", "Não avaliado",
+                                                       ifelse(data$Consumo_Alcool == "8", "Não se aplica",
+                                                              ifelse(data$Consumo_Alcool == "9", "Sem informação", data$Consumo_Alcool))))))
     data$Consumo_Alcool <- factor(data$Consumo_Alcool, levels = c("Nunca", "Ex-consumidor", "Sim", "Não avaliado", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Consumo_Alcool")
   }
 
   # 'Tabagismo'
   if ("Tabagismo" %in% names(data)) {
     message("Recodificando 'Tabagismo'.")
     data$Tabagismo <- ifelse(data$Tabagismo == "1", "Nunca",
-                              ifelse(data$Tabagismo == "2", "Ex-consumidor",
-                                     ifelse(data$Tabagismo == "3", "Sim",
-                                            ifelse(data$Tabagismo == "4", "Não avaliado",
-                                                   ifelse(data$Tabagismo == "8", "Não se aplica",
-                                                          ifelse(data$Tabagismo == "9", "Sem informação", data$Tabagismo))))))
+                             ifelse(data$Tabagismo == "2", "Ex-consumidor",
+                                    ifelse(data$Tabagismo == "3", "Sim",
+                                           ifelse(data$Tabagismo == "4", "Não avaliado",
+                                                  ifelse(data$Tabagismo == "8", "Não se aplica",
+                                                         ifelse(data$Tabagismo == "9", "Sem informação", data$Tabagismo))))))
     data$Tabagismo <- factor(data$Tabagismo, levels = c("Nunca", "Ex-consumidor", "Sim", "Não avaliado", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Tabagismo")
   }
 
   # 'Origem_do_Encaminhamento'
   if ("Origem_do_Encaminhamento" %in% names(data)) {
     message("Recodificando 'Origem_do_Encaminhamento'.")
     data$Origem_do_Encaminhamento <- ifelse(data$Origem_do_Encaminhamento == "1", "SUS",
-                                             ifelse(data$Origem_do_Encaminhamento == "2", "Não SUS",
-                                                    ifelse(data$Origem_do_Encaminhamento == "3", "Veio por conta própria",
-                                                           ifelse(data$Origem_do_Encaminhamento == "8", "Não se aplica",
-                                                                  ifelse(data$Origem_do_Encaminhamento == "9", "Sem informação", data$Origem_do_Encaminhamento)))))
+                                            ifelse(data$Origem_do_Encaminhamento == "2", "Não SUS",
+                                                   ifelse(data$Origem_do_Encaminhamento == "3", "Veio por conta própria",
+                                                          ifelse(data$Origem_do_Encaminhamento == "8", "Não se aplica",
+                                                                 ifelse(data$Origem_do_Encaminhamento == "9", "Sem informação", data$Origem_do_Encaminhamento)))))
     data$Origem_do_Encaminhamento <- factor(data$Origem_do_Encaminhamento, levels = c("SUS", "Não SUS", "Veio por conta própria", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Origem_do_Encaminhamento")
   }
 
   # 'Exames_Relevantes_para_Diagnostico'
   if ("Exames_Relevantes_para_Diagnostico" %in% names(data)) {
     message("Recodificando 'Exames_Relevantes_para_Diagnostico'.")
     data$Exames_Relevantes_para_Diagnostico <- ifelse(data$Exames_Relevantes_para_Diagnostico == "1", "Exame clínico e patologia clínica",
-                                                       ifelse(data$Exames_Relevantes_para_Diagnostico == "2", "Exames por imagem",
-                                                              ifelse(data$Exames_Relevantes_para_Diagnostico == "3", "Endoscopia e cirurgia exploradora",
-                                                                     ifelse(data$Exames_Relevantes_para_Diagnostico == "4", "Anatomia patológica",
-                                                                            ifelse(data$Exames_Relevantes_para_Diagnostico == "5", "Marcadores tumorais",
-                                                                                   ifelse(data$Exames_Relevantes_para_Diagnostico == "8", "Não se aplica",
-                                                                                          ifelse(data$Exames_Relevantes_para_Diagnostico == "9", "Sem informação", data$Exames_Relevantes_para_Diagnostico)))))))
+                                                      ifelse(data$Exames_Relevantes_para_Diagnostico == "2", "Exames por imagem",
+                                                             ifelse(data$Exames_Relevantes_para_Diagnostico == "3", "Endoscopia e cirurgia exploradora",
+                                                                    ifelse(data$Exames_Relevantes_para_Diagnostico == "4", "Anatomia patológica",
+                                                                           ifelse(data$Exames_Relevantes_para_Diagnostico == "5", "Marcadores tumorais",
+                                                                                  ifelse(data$Exames_Relevantes_para_Diagnostico == "8", "Não se aplica",
+                                                                                         ifelse(data$Exames_Relevantes_para_Diagnostico == "9", "Sem informação", data$Exames_Relevantes_para_Diagnostico)))))))
     data$Exames_Relevantes_para_Diagnostico <- factor(data$Exames_Relevantes_para_Diagnostico, levels = c("Exame clínico e patologia clínica", "Exames por imagem", "Endoscopia e cirurgia exploradora", "Anatomia patológica", "Marcadores tumorais", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Exames_Relevantes_para_Diagnostico")
   }
 
   # 'Estado_conjugal'
   if ("Estado_conjugal" %in% names(data)) {
     message("Recodificando 'Estado_conjugal'.")
     data$Estado_conjugal <- ifelse(data$Estado_conjugal == "1", "Solteiro",
-                                    ifelse(data$Estado_conjugal == "2", "Casado",
-                                           ifelse(data$Estado_conjugal == "3", "Viúvo",
-                                                  ifelse(data$Estado_conjugal == "4", "Separado judicialmente",
-                                                         ifelse(data$Estado_conjugal == "5", "União consensual",
-                                                                ifelse(data$Estado_conjugal == "9", "Sem informação", data$Estado_conjugal))))))
+                                   ifelse(data$Estado_conjugal == "2", "Casado",
+                                          ifelse(data$Estado_conjugal == "3", "Viúvo",
+                                                 ifelse(data$Estado_conjugal == "4", "Separado judicialmente",
+                                                        ifelse(data$Estado_conjugal == "5", "União consensual",
+                                                               ifelse(data$Estado_conjugal == "9", "Sem informação", data$Estado_conjugal))))))
     data$Estado_conjugal <- factor(data$Estado_conjugal, levels = c("Solteiro", "Casado", "Viúvo", "Separado judicialmente", "União consensual", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Estado_conjugal")
   }
 
   # 'Diagnosticos_e_Tratamentos_Anterior'
   if ("Diagnosticos_e_Tratamentos_Anterior" %in% names(data)) {
     message("Recodificando 'Diagnosticos_e_Tratamentos_Anterior'.")
     data$Diagnosticos_e_Tratamentos_Anterior <- ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "1", "Sem diagnóstico/Sem tratamento",
-                                                        ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "2", "Com diagnóstico/Sem tratamento",
-                                                               ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "3", "Com diagnóstico/Com tratamento",
-                                                                      ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "4", "Outros",
-                                                                             ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "9", "Sem informação", data$Diagnosticos_e_Tratamentos_Anterior)))))
+                                                       ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "2", "Com diagnóstico/Sem tratamento",
+                                                              ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "3", "Com diagnóstico/Com tratamento",
+                                                                     ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "4", "Outros",
+                                                                            ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "9", "Sem informação", data$Diagnosticos_e_Tratamentos_Anterior)))))
     data$Diagnosticos_e_Tratamentos_Anterior <- factor(data$Diagnosticos_e_Tratamentos_Anterior, levels = c("Sem diagnóstico/Sem tratamento", "Com diagnóstico/Sem tratamento", "Com diagnóstico/Com tratamento", "Outros", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Diagnosticos_e_Tratamentos_Anterior")
   }
 
   # 'Base_Mais_Importante_Diagnostico'
   if ("Base_Mais_Importante_Diagnostico" %in% names(data)) {
     message("Recodificando 'Base_Mais_Importante_Diagnostico'.")
     data$Base_Mais_Importante_Diagnostico <- ifelse(data$Base_Mais_Importante_Diagnostico == "1", "Clínica",
-                                                       ifelse(data$Base_Mais_Importante_Diagnostico == "2", "Pesquisa clínica",
-                                                              ifelse(data$Base_Mais_Importante_Diagnostico == "3", "Exame por imagem",
-                                                                     ifelse(data$Base_Mais_Importante_Diagnostico == "4", "Marcadores tumorais",
-                                                                            ifelse(data$Base_Mais_Importante_Diagnostico == "5", "Citologia",
-                                                                                   ifelse(data$Base_Mais_Importante_Diagnostico == "6", "Histologia da metástase",
-                                                                                          ifelse(data$Base_Mais_Importante_Diagnostico == "7", "Histologia do tumor primário",
-                                                                                                 ifelse(data$Base_Mais_Importante_Diagnostico == "9", "Sem informação", data$Base_Mais_Importante_Diagnostico))))))))
+                                                    ifelse(data$Base_Mais_Importante_Diagnostico == "2", "Pesquisa clínica",
+                                                           ifelse(data$Base_Mais_Importante_Diagnostico == "3", "Exame por imagem",
+                                                                  ifelse(data$Base_Mais_Importante_Diagnostico == "4", "Marcadores tumorais",
+                                                                         ifelse(data$Base_Mais_Importante_Diagnostico == "5", "Citologia",
+                                                                                ifelse(data$Base_Mais_Importante_Diagnostico == "6", "Histologia da metástase",
+                                                                                       ifelse(data$Base_Mais_Importante_Diagnostico == "7", "Histologia do tumor primário",
+                                                                                              ifelse(data$Base_Mais_Importante_Diagnostico == "9", "Sem informação", data$Base_Mais_Importante_Diagnostico))))))))
     data$Base_Mais_Importante_Diagnostico <- factor(data$Base_Mais_Importante_Diagnostico, levels = c("Clínica", "Pesquisa clínica", "Exame por imagem", "Marcadores tumorais", "Citologia", "Histologia da metástase", "Histologia do tumor primário", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Base_Mais_Importante_Diagnostico")
   }
 
   # 'Lateralidade'
   if ("Lateralidade" %in% names(data)) {
     message("Recodificando 'Lateralidade'.")
     data$Lateralidade <- ifelse(data$Lateralidade == "1", "Direita",
-                                 ifelse(data$Lateralidade == "2", "Esquerda",
-                                        ifelse(data$Lateralidade == "3", "Bilateral",
-                                               ifelse(data$Lateralidade == "8", "Não se aplica",
-                                                      ifelse(data$Lateralidade == "9", "Sem informação", data$Lateralidade)))))
+                                ifelse(data$Lateralidade == "2", "Esquerda",
+                                       ifelse(data$Lateralidade == "3", "Bilateral",
+                                              ifelse(data$Lateralidade == "8", "Não se aplica",
+                                                     ifelse(data$Lateralidade == "9", "Sem informação", data$Lateralidade)))))
     data$Lateralidade <- factor(data$Lateralidade, levels = c("Direita", "Esquerda", "Bilateral", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Lateralidade")
   }
 
   # 'Mais_de_Um_Tumor'
   if ("Mais_de_Um_Tumor" %in% names(data)) {
     message("Recodificando 'Mais_de_Um_Tumor'.")
     data$Mais_de_Um_Tumor <- ifelse(data$Mais_de_Um_Tumor == "1", "Não",
-                                     ifelse(data$Mais_de_Um_Tumor == "2", "Sim",
-                                            ifelse(data$Mais_de_Um_Tumor == "3", "Duvidoso", data$Mais_de_Um_Tumor)))
+                                    ifelse(data$Mais_de_Um_Tumor == "2", "Sim",
+                                           ifelse(data$Mais_de_Um_Tumor == "3", "Duvidoso", data$Mais_de_Um_Tumor)))
     data$Mais_de_Um_Tumor <- factor(data$Mais_de_Um_Tumor, levels = c("Sim", "Não", "Duvidoso"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Mais_de_Um_Tumor")
   }
 
   # 'Razao_Nao_Tratamento'
   if ("Razao_Nao_Tratamento" %in% names(data)) {
     message("Recodificando 'Razao_Nao_Tratamento'.")
     data$Razao_Nao_Tratamento <- ifelse(data$Razao_Nao_Tratamento == "1", "Recusa do tratamento",
-                                         ifelse(data$Razao_Nao_Tratamento == "2", "Tratamento realizado fora",
-                                                ifelse(data$Razao_Nao_Tratamento == "3", "Doença avançada, falta de condições clínicas ou outras doenças associadas",
-                                                       ifelse(data$Razao_Nao_Tratamento == "4", "Abandono do tratamento",
-                                                              ifelse(data$Razao_Nao_Tratamento == "5", "Complicações de tratamento",
-                                                                     ifelse(data$Razao_Nao_Tratamento == "6", "Óbito",
-                                                                            ifelse(data$Razao_Nao_Tratamento == "7", "Outras razões",
-                                                                                   ifelse(data$Razao_Nao_Tratamento == "8", "Não se aplica",
-                                                                                          ifelse(data$Razao_Nao_Tratamento == "9", "Sem informação", data$Razao_Nao_Tratamento)))))))))
+                                        ifelse(data$Razao_Nao_Tratamento == "2", "Tratamento realizado fora",
+                                               ifelse(data$Razao_Nao_Tratamento == "3", "Doença avançada, falta de condições clínicas ou outras doenças associadas",
+                                                      ifelse(data$Razao_Nao_Tratamento == "4", "Abandono do tratamento",
+                                                             ifelse(data$Razao_Nao_Tratamento == "5", "Complicações de tratamento",
+                                                                    ifelse(data$Razao_Nao_Tratamento == "6", "Óbito",
+                                                                           ifelse(data$Razao_Nao_Tratamento == "7", "Outras razões",
+                                                                                  ifelse(data$Razao_Nao_Tratamento == "8", "Não se aplica",
+                                                                                         ifelse(data$Razao_Nao_Tratamento == "9", "Sem informação", data$Razao_Nao_Tratamento)))))))))
     data$Razao_Nao_Tratamento <- factor(data$Razao_Nao_Tratamento, levels = c("Recusa do tratamento", "Tratamento realizado fora", "Doença avançada, falta de condições clínicas ou outras doenças associadas", "Abandono do tratamento", "Complicações de tratamento", "Óbito", "Outras razões", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Razao_Nao_Tratamento")
   }
 
   # 'Primeiro_Tratamento_Hospital'
   if ("Primeiro_Tratamento_Hospital" %in% names(data)) {
     message("Recodificando 'Primeiro_Tratamento_Hospital'.")
     data$Primeiro_Tratamento_Hospital <- ifelse(data$Primeiro_Tratamento_Hospital == "1", "Nenhum",
-                                                 ifelse(data$Primeiro_Tratamento_Hospital == "2", "Cirurgia",
-                                                        ifelse(data$Primeiro_Tratamento_Hospital == "3", "Radioterapia",
-                                                               ifelse(data$Primeiro_Tratamento_Hospital == "4", "Quimioterapia",
-                                                                      ifelse(data$Primeiro_Tratamento_Hospital == "5", "Hormonioterapia",
-                                                                             ifelse(data$Primeiro_Tratamento_Hospital == "6", "Transplante de medula óssea",
-                                                                                    ifelse(data$Primeiro_Tratamento_Hospital == "7", "Imunoterapia",
-                                                                                           ifelse(data$Primeiro_Tratamento_Hospital == "8", "Outras",
-                                                                                                  ifelse(data$Primeiro_Tratamento_Hospital == "9", "Sem informação", data$Primeiro_Tratamento_Hospital)))))))))
+                                                ifelse(data$Primeiro_Tratamento_Hospital == "2", "Cirurgia",
+                                                       ifelse(data$Primeiro_Tratamento_Hospital == "3", "Radioterapia",
+                                                              ifelse(data$Primeiro_Tratamento_Hospital == "4", "Quimioterapia",
+                                                                     ifelse(data$Primeiro_Tratamento_Hospital == "5", "Hormonioterapia",
+                                                                            ifelse(data$Primeiro_Tratamento_Hospital == "6", "Transplante de medula óssea",
+                                                                                   ifelse(data$Primeiro_Tratamento_Hospital == "7", "Imunoterapia",
+                                                                                          ifelse(data$Primeiro_Tratamento_Hospital == "8", "Outras",
+                                                                                                 ifelse(data$Primeiro_Tratamento_Hospital == "9", "Sem informação", data$Primeiro_Tratamento_Hospital)))))))))
     data$Primeiro_Tratamento_Hospital <- factor(data$Primeiro_Tratamento_Hospital, levels = c("Nenhum", "Cirurgia", "Radioterapia", "Quimioterapia", "Hormonioterapia", "Transplante de medula óssea", "Imunoterapia", "Outras", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Primeiro_Tratamento_Hospital")
   }
 
   # 'Estado_Doenca_Final_Tratamento'
   if ("Estado_Doenca_Final_Tratamento" %in% names(data)) {
     message("Recodificando 'Estado_Doenca_Final_Tratamento'.")
     data$Estado_Doenca_Final_Tratamento <- ifelse(data$Estado_Doenca_Final_Tratamento == "1", "Sem evidência da doença (remissão completa)",
-                                            ifelse(data$Estado_Doenca_Final_Tratamento == "2", "Remissão parcial",
-                                                   ifelse(data$Estado_Doenca_Final_Tratamento == "3", "Doença estável",
-                                                          ifelse(data$Estado_Doenca_Final_Tratamento == "4", "Doença em progressão",
-                                                                 ifelse(data$Estado_Doenca_Final_Tratamento == "5", "Suporte terapêutico oncológico",
-                                                                        ifelse(data$Estado_Doenca_Final_Tratamento == "6", "Óbito",
-                                                                               ifelse(data$Estado_Doenca_Final_Tratamento == "8", "Não se aplica",
-                                                                                      ifelse(data$Estado_Doenca_Final_Tratamento == "9", "Sem informação", data$Estado_Doenca_Final_Tratamento))))))))
+                                                  ifelse(data$Estado_Doenca_Final_Tratamento == "2", "Remissão parcial",
+                                                         ifelse(data$Estado_Doenca_Final_Tratamento == "3", "Doença estável",
+                                                                ifelse(data$Estado_Doenca_Final_Tratamento == "4", "Doença em progressão",
+                                                                       ifelse(data$Estado_Doenca_Final_Tratamento == "5", "Suporte terapêutico oncológico",
+                                                                              ifelse(data$Estado_Doenca_Final_Tratamento == "6", "Óbito",
+                                                                                     ifelse(data$Estado_Doenca_Final_Tratamento == "8", "Não se aplica",
+                                                                                            ifelse(data$Estado_Doenca_Final_Tratamento == "9", "Sem informação", data$Estado_Doenca_Final_Tratamento))))))))
     data$Estado_Doenca_Final_Tratamento <- factor(data$Estado_Doenca_Final_Tratamento, levels = c("Sem evidência da doença (remissão completa)", "Remissão parcial", "Doença estável", "Doença em progressão", "Suporte terapêutico oncológico", "Óbito", "Não se aplica", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Estado_Doenca_Final_Tratamento")
   }
 
   # 'Base_Mais_Importante_Diagnostico_Sem_Patologicas'
@@ -486,16 +529,22 @@ recodificar_variaveis <- function(data) {
       levels = c("Exame clínico", "Recursos auxiliares não microscópicos", "Confirmação microscópica", "Sem informação")
     )
     contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Base_Mais_Importante_Diagnostico_Sem_Patologicas")
   }
 
 
 
-  message(paste("Recodificação das variáveis concluída com sucesso. Total:", contador_recodificacoes))
+
+  if (length(variaveis_ausentes) > 0) {
+    message(paste("Variáveis ausentes:", paste(variaveis_ausentes, collapse = ", ")))
+  }
+
+  message(paste("Variáveis recodificadas:", paste(variaveis_recodificadas, collapse = ", ")))
+
+  message(paste("\033[1;32m", "> Recodificação das variáveis concluída. Total:", contador_recodificacoes, "com sucesso \033[0m"))
+
   return(data)
 }
-
-
-
 
 
 
@@ -527,34 +576,43 @@ renomear_siglas_estados <- function(dados) {
     SP = "São Paulo", SE = "Sergipe", TO = "Tocantins"
   )
 
+  colunas_adicionadas <- 0
+
   # Verifica se as colunas existem antes de tentar acessá-las
   if ("Estado_Residencia" %in% names(dados)) {
     dados$Nome_Estado_Residencia <- state_map[dados$Estado_Residencia]
     message("Nomes completos dos estados para 'Estado_Residencia' adicionados.")
+    colunas_adicionadas <- colunas_adicionadas + 1
   } else {
-    message("A coluna 'Estado_Residencia' não foi encontrada no dataframe.")
+    message("\033[1;31mA coluna 'Estado_Residencia' não foi encontrada no dataframe.\033[0m")
   }
 
   if ("UF_Unidade_Hospital" %in% names(dados)) {
     dados$Nome_Estado_Hospital <- state_map[dados$UF_Unidade_Hospital]
     message("Nomes completos dos estados para 'UF_Unidade_Hospital' adicionados.")
+    colunas_adicionadas <- colunas_adicionadas + 1
   } else {
-    message("A coluna 'UF_Unidade_Hospital' não foi encontrada no dataframe.")
+    message("\033[1;31mA coluna 'UF_Unidade_Hospital' não foi encontrada no dataframe.\033[0m")
   }
 
-  message("Mapeamento das siglas dos estados concluído com sucesso. Foram adicionadas mais duas colunas no final do dataframe, chamadas Nome_Estado_Residencia e Nome_Estado_Hospital.")
+  if (colunas_adicionadas == 0) {
+    stop("\033[1;31mNenhuma das colunas necessárias ('Estado_Residencia' ou 'UF_Unidade_Hospital') foi encontrada no dataframe. Função interrompida.\033[0m")
+  }
+
+  message(paste("\033[1;32m", "> Mapeamento das siglas dos estados concluído. Foram adicionadas", colunas_adicionadas, "coluna(s) no final do dataframe.", "\033[0m"))
+
   return(dados)
 }
 
 
 
 
-#' Renomear CID de 3 Dígitos
+#' Renomear CID-O de 3 Dígitos
 #'
-#' Esta função mapeia os códigos CID de 3 dígitos para seus nomes completos na coluna `Localizacao_Primaria_3D` de um dataframe. Os nomes completos dos CID  de 3 dígitos são adicionados em uma nova coluna `CID3d`.
+#' Esta função mapeia os códigos CID-O de 3 dígitos para seus nomes completos na coluna `Localizacao_Primaria_3D` de um dataframe. Os nomes completos dos CID-O de 3 dígitos são adicionados em uma nova coluna `CID3d`.
 #'
 #' @param dados Um dataframe contendo a coluna `Localizacao_Primaria_3D`.
-#' @return Retorna um dataframe com os nomes completos dos CID  de 3 dígitos adicionados em uma nova coluna.
+#' @return Retorna um dataframe com os nomes completos dos CID-O de 3 dígitos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_CID_3digitos
 #' @examples
@@ -562,7 +620,7 @@ renomear_siglas_estados <- function(dados) {
 #'
 #' dados_RHC_combinados <- renomear_CID_3digitos(dados_RHC_combinados)
 renomear_CID_3digitos <- function(dados) {
-  message("Iniciando o ajuste dos códigos CID-3 dígitos para nomes completos.")
+  message("Iniciando o ajuste dos códigos CID-O de 3 dígitos para nomes completos.")
 
   # Definição do dataframe de mapeamento de CID para nomes
   cid_names <- data.frame(
@@ -628,17 +686,18 @@ renomear_CID_3digitos <- function(dados) {
   )
 
   # Verifica se a coluna Localizacao_Primaria_3D existe antes de tentar acessá-la
-  if ("Localizacao_Primaria_3D" %in% names(dados)) {
-    message("Mapeando os códigos CID-3 dígitos para nomes completos.")
-    # Mapeamento dos códigos CID para nomes usando um vetor nomeado
-    map <- setNames(cid_names$NOME, cid_names$CID)
-    dados$CID3d <- map[dados$Localizacao_Primaria_3D]
-    message("Nomes completos dos CID-3 dígitos adicionados.")
-  } else {
-    message("A coluna 'Localizacao_Primaria_3D' não foi encontrada no dataframe.")
+  if (!"Localizacao_Primaria_3D" %in% names(dados)) {
+    stop("\033[1;31mA coluna 'Localizacao_Primaria_3D' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message("Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID3d.")
+  message("Mapeando os códigos CID-O de 3 dígitos para nomes completos.")
+  # Mapeamento dos códigos CID para nomes usando um vetor nomeado
+  map <- setNames(cid_names$NOME, cid_names$CID)
+  dados$CID3d <- map[dados$Localizacao_Primaria_3D]
+  message("Nomes completos dos CID-O de 3 dígitos adicionados.")
+
+  message(paste("\033[1;32m", "> Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID3d.", "\033[0m"))
+
   return(dados)
 }
 
@@ -646,13 +705,12 @@ renomear_CID_3digitos <- function(dados) {
 
 
 
-
 #' Renomear CID  de 4 Dígitos em um DataFrame
 #'
-#' Esta função mapeia os códigos CID  de 4 dígitos para seus nomes completos na coluna `Localizacao_Primaria_4D` de um dataframe. Os nomes completos dos CID de 4 dígitos são adicionados em uma nova coluna `CID4d`.
+#' Esta função mapeia os códigos CID  de 4 dígitos para seus nomes completos na coluna `Localizacao_Primaria_4D` de um dataframe. Os nomes completos dos CID-O de 4 dígitos são adicionados em uma nova coluna `CID4d`.
 #'
 #' @param dados Um dataframe contendo a coluna `Localizacao_Primaria_4D`.
-#' @return Retorna um dataframe com os nomes completos dos CID  de 4 dígitos adicionados em uma nova coluna.
+#' @return Retorna um dataframe com os nomes completos dos CID-O  de 4 dígitos adicionados em uma nova coluna.
 #' @export
 #' @name renomear_CID_4digitos
 #' @examples
@@ -660,7 +718,7 @@ renomear_CID_3digitos <- function(dados) {
 #'
 #' dados_RHC_combinados <- renomear_CID_4digitos(dados_RHC_combinados)
 renomear_CID_4digitos <- function(dados) {
-  message("Iniciando o ajuste dos códigos CID-4 dígitos para nomes completos.")
+  message("Iniciando o ajuste dos códigos CID-O de 4 dígitos para nomes completos.")
 
   # Definição do dataframe de mapeamento de CID para nomes
   cid_names <- data.frame(
@@ -1436,21 +1494,21 @@ renomear_CID_4digitos <- function(dados) {
              "Sistema hematopoiético, não especificado", "Baço", "Sangue", "Sistema reticuloendotelial, não especificado", "Mola hidatidiforme, não especificado")
   )
 
-# Verifica se a coluna Localizacao_Primaria_4D existe antes de tentar acessá-la
-  if ("Localizacao_Primaria_4D" %in% names(dados)) {
-    message("Mapeando os códigos CID-4 dígitos para nomes completos.")
-    # Mapeamento dos códigos CID para nomes usando um vetor nomeado
-    map <- setNames(cid_names$NOME, cid_names$CID)
-    dados$CID4d <- map[dados$Localizacao_Primaria_4D]
-    message("Nomes completos dos CID-4 dígitos adicionados.")
-  } else {
-    message("A coluna 'Localizacao_Primaria_4D' não foi encontrada no dataframe.")
+  # Verifica se a coluna Localizacao_Primaria_3D existe antes de tentar acessá-la
+  if (!"Localizacao_Primaria_4D" %in% names(dados)) {
+    stop("\033[1;31mA coluna 'Localizacao_Primaria_4D' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message("Ajuste dos códigos CID-4 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID4d.")
+  message("Mapeando os códigos CID-O de 4 dígitos para nomes completos.")
+  # Mapeamento dos códigos CID para nomes usando um vetor nomeado
+  map <- setNames(cid_names$NOME, cid_names$CID)
+  dados$CID4d <- map[dados$Localizacao_Primaria_4D]
+  message("Nomes completos dos CID-O de 4 dígitos adicionados.")
+
+  message(paste("\033[1;32m", "> Ajuste dos códigos CID-O de 4 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID4d.", "\033[0m"))
+
   return(dados)
 }
-
 
 
 
@@ -1871,7 +1929,7 @@ renomear_CNES <- function(dados) {
                         "Instituto de Radioterapia Vale do Paraíba/CENON - Centro de Oncologia Radioterápica do Vale do Paraíba")
   )
 
-  # Verifica se a coluna codigo_CNES existe antes de tentar acessá-la
+  # Verifica se a coluna CNES_Hospital existe antes de tentar acessá-la
   if ("CNES_Hospital" %in% names(dados)) {
     message("Mapeando os códigos CNES para nomes completos dos estabelecimentos.")
     # Mapeamento dos códigos CNES para nomes usando um vetor nomeado
@@ -1879,10 +1937,11 @@ renomear_CNES <- function(dados) {
     dados$Estabelecimento_Hospitalar <- map[dados$CNES_Hospital]
     message("Nomes completos dos estabelecimentos adicionados.")
   } else {
-    message("A coluna 'CNES_Hospital' não foi encontrada no dataframe.")
+    stop("\033[1;31mA coluna 'CNES_Hospital' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message("Ajuste dos códigos CNES concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Estabelecimento_Hospitalar.")
+  message(paste("\033[1;32m", "> Ajuste dos códigos CNES concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Estabelecimento_Hospitalar.", "\033[0m"))
+
   return(dados)
 }
 
@@ -2213,13 +2272,14 @@ renomear_tipo_histologico <- function(dados) {
     dados$Tipo_Histologico_Completo <- map[as.character(dados$Tipo_Histologico)]
     message("Nomes completos dos Tipos Histológicos adicionados.")
   } else {
-    message("A coluna 'Tipo_Histologico' não foi encontrada no dataframe.")
+    stop("\033[1;31mA coluna 'Tipo_Histologico' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message("Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Tipo_Histologico_Completo.")
-  return(dados)
-}
+  message(paste("\033[1;32m", "> Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Tipo_Histologico_Completo.", "\033[0m"))
 
+  return(dados)
+
+}
 
 
 
@@ -2244,19 +2304,25 @@ renomear_tipo_histologico <- function(dados) {
 analise_completude <- function(dados) {
   message("Iniciando a análise de completude de dados.")
 
+  # Número de linhas do dataframe
+  numero_linhas <- nrow(dados)
+
+  # Quantidade de anos distintos e intervalo de anos na variável Ano_do_Banco
+  anos <- unique(dados$Ano_do_Banco)
+  quantidade_anos <- length(anos)
+  intervalo_anos <- paste(min(anos), max(anos), sep = "-")
+
   # Nome das variáveis
   variaveis <- colnames(dados)
 
-  message("Calculando o número de Dados Ausentes e 'Sem informação' por coluna.")
+  message("Calculando o total de NA e 'Sem informação'.")
   # Número de NA's e "Sem informação" por coluna
   dados_ausentes <- sapply(dados, function(x) {
     sum(is.na(x) | as.character(x) == "Sem informação")
   })
-
-
+  message("Calculando a proporção de Dados Ausentes por coluna")
   # Calcular a porcentagem de NA's por coluna em porcentagem, arredondada para duas casas decimais (usada no gráfico)
   porcentagem <- round((dados_ausentes / nrow(dados)) * 100, 2)
-
 
   # Calcular a completude como o complemento da porcentagem
   completude <- round(100 - porcentagem, 2)
@@ -2276,11 +2342,10 @@ analise_completude <- function(dados) {
     }
   }
 
-
   # Aplicar a classificação
   classificacao <- sapply(completude, classificar_completude)
 
-  message("Criando a tabela de resultados.")
+  message("Tabela de resultados:")
 
   # Criar a tabela de resultados
   Ausentes <- data.frame(Variavel = variaveis,
@@ -2288,19 +2353,25 @@ analise_completude <- function(dados) {
                          Dados_Ausentes = dados_ausentes,
                          Classificacao_Completude = classificacao,
                          row.names = NULL)
-  message(".")
-  message(".")
-  message(".")
+  cat("\n\n")
+  message(paste("Tabela – Análise da qualidade dos dados por Classificação da Completude de",
+                numero_linhas,
+                "registros de câncer do RHC de um período de", quantidade_anos, "anos,", intervalo_anos,"."))
+  cat("\n")
   # Ordenar a tabela em ordem crescente de Dados_Ausentes
   Ausentes <- Ausentes[order(Ausentes$Dados_Ausentes), ]
 
   # Exibir a tabela de ausentes sem os números das linhas
   print(Ausentes, row.names = FALSE)
 
-
   # Ajustar as margens do gráfico (margem esquerda e direita ajustadas)
-  par(mar=c(6, 17, 2, 10) + 0.1)
+  par(mar = c(6, 17, 2, 10) + 0.1)
 
+  # Criar o título do gráfico com o número de linhas incluído
+  titulo_grafico <- paste("Figura – Gráfico de Dados Ausentes e Análise de Completude dos Dados de",
+                          numero_linhas,
+                          "registros de câncer \ndo Registro Hospitalar de Câncer, de um período de",
+                          quantidade_anos, "anos,", intervalo_anos, ".")
 
   # Criar o gráfico de barras horizontal com a ordem invertida
   bp <- barplot(Ausentes$Dados_Ausentes,
@@ -2310,9 +2381,8 @@ analise_completude <- function(dados) {
                 col = colorRampPalette(c("darkgreen", "green", "yellow", "orange", "red"))(length(Ausentes$Dados_Ausentes)),
                 border = NA,
                 xlab = NA,
-                main = "Quantitativo e Percentual de Dados Ausentes com Classificação de Completude por Variável",
+                main = titulo_grafico,
                 cex.names = 0.8)
-
 
   # Adicionar os valores de Dados_Ausentes, Porcentagem e Classificação no final das barras
   text(x = Ausentes$Dados_Ausentes,
@@ -2323,19 +2393,17 @@ analise_completude <- function(dados) {
        col = "black",
        xpd = TRUE)
 
-
   # Adicionar a fonte
   mtext("Classificação de Completude: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças \n menores de um ano registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.",
         side = 1, line = 4, at = 0.1, cex = 0.8, col = "black", xpd = TRUE, adj = 0)
-  message(".")
-  message(".")
-  message(".")
-  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006")
 
-  message(".")
-  message("Análise de completude concluída.")
+  cat("\n\n\n")
+  cat("Informações extras:\n")
+  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.")
+  cat("\n\n")
+  message(paste("\033[1;32m", "> Análise de completude concluída.", "\033[0m"))
+
 }
-
 
 
 
@@ -2357,9 +2425,14 @@ analise_completude <- function(dados) {
 #' # Supondo que você tenha um dataframe chamado dados_RHC_combinados,
 #' # Use a função da seguinte forma:
 #'
-#' Nome_da_Sua_Tabela_de_Completude <- analise_completude_ano(dados_RHC_combinados)
+#' Nome_da_Sua_Tabela_de_Completud_ano <- analise_completude_ano(dados_RHC_combinados)
 analise_completude_ano <- function(dados) {
   message("Iniciando a análise de completude de dados por ano.")
+
+  # Verifica se a coluna Ano_do_Banco existe antes de tentar acessá-la
+  if (!"Ano_do_Banco" %in% names(dados)) {
+    stop("\033[1;31mA coluna 'Ano_do_Banco' não foi encontrada no dataframe. Função interrompida.\033[0m")
+  }
 
   # Nome das variáveis
   variaveis <- colnames(dados)
@@ -2389,6 +2462,9 @@ analise_completude_ano <- function(dados) {
   for (ano in anos) {
     message(paste("Processando dados para o ano:", ano))
     dados_ano <- dados[dados$Ano_do_Banco == ano, ]
+    if (nrow(dados_ano) == 0) {
+      stop(paste("\033[1;31mNenhum dado encontrado para o ano", ano, ". Função interrompida.\033[0m"))
+    }
     dados_ausentes <- sapply(dados_ano, function(x) {
       sum(is.na(x) | as.character(x) == "Sem informação")
     })
@@ -2405,9 +2481,6 @@ analise_completude_ano <- function(dados) {
     Completude[[as.character(ano)]] <- completude_lista[[as.character(ano)]]
   }
 
-  # Exibir a tabela de completude sem os números das linhas
-  print(Completude, row.names = FALSE)
-
   # Adicionar a legenda explicando as classificações
   cat("\nLegenda de Classificação de Completude:\n")
   cat("E  - Excelente (>= 95%)\n")
@@ -2415,14 +2488,13 @@ analise_completude_ano <- function(dados) {
   cat("R  - Regular (80% a 89.9%)\n")
   cat("RU - Ruim (50% a 79.9%)\n")
   cat("MR - Muito Ruim (< 50%)\n")
-  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.")
+  cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.\n")
 
-  message("Análise de completude concluída.")
+  message(paste("\033[1;32m", "> Análise de completude por ano concluída. Veja o dataframe criado.", "\033[0m"))
 
   # Retornar a tabela de completude
   return(Completude)
 }
-
 
 
 
@@ -2446,143 +2518,98 @@ analise_completude_ano <- function(dados) {
 #' # Caso contrário, você terá um dataframe com todos os dados ajustados de forma automática.
 #' @export
 #' @name construir_banco
-construir_banco <- function(data) {
+construir_banco <- function() {
   message("Carregando os dados...")
-  # Aplicar a função carregarRHC
+
+  # Iniciar medição do tempo total
+  start_time_total <- Sys.time()
+
+  # Aplicar a função leraquivoDBF
   data <- leraquivoDBF()
+
   # Verificação se a lista está vazia (NULL)
   if (is.null(data)) {
-    message("Nenhum dado foi encontrado. A função será interrompida.")
+    message(paste("\033[1;31m", "> Nenhum dado foi encontrado. A função será interrompida.", "\033[0m"))
+
     return(NULL)
   }
 
+  cat("\n\n\n\n")
 
-  message(".")
-  message(".")
-  message("Dados carregados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Renomeando colunas...")
   # Aplicar a função renomear_colunas
+  message("Renomeando colunas...")
   data <- renomear_colunas(data)
-  message(".")
-  message(".")
-  message("Colunas renomeadas com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Modificando tipos de variáveis...")
+  cat("\n\n\n\n")
+
   # Aplicar a função modificar_tipo_variavel
+  message("Modificando tipos de variáveis...")
   data <- modificar_tipo_variavel(data)
-  message(".")
-  message(".")
-  message("Tipos de variáveis modificados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Recodificando variáveis...")
+  cat("\n\n\n\n")
+
   # Aplicar a função recodificar_variaveis
+  message("Recodificando variáveis...")
   data <- recodificar_variaveis(data)
-  message(".")
-  message(".")
-  message("Variáveis recodificadas com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
+  cat("\n\n\n\n")
+
+  # Aplicar a função renomear_siglas_estados
   message("Renomeando siglas dos estados...")
-  # Aplicar a função mapear_siglas_estados
   data <- renomear_siglas_estados(data)
-  message(".")
-  message(".")
-  message("Siglas dos estados renomeadas com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
+  cat("\n\n\n\n")
+
+  # Aplicar a função renomear_CID_3digitos
   message("Ajustando códigos CID de 3 dígitos...")
-  # Aplicar a função ajustar_CID_3digitos
   data <- renomear_CID_3digitos(data)
-  message(".")
-  message(".")
-  message("Códigos CID de 3 dígitos ajustados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
+  cat("\n\n\n\n")
+
+  # Aplicar a função renomear_CID_4digitos
   message("Ajustando códigos CID de 4 dígitos...")
-  # Aplicar a função ajustar_CID_4digitos
   data <- renomear_CID_4digitos(data)
-  message(".")
-  message(".")
-  message("Códigos CID de 4 dígitos ajustados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Ajustando códigos CNES...")
+  cat("\n\n\n\n")
+
   # Aplicar a função renomear_CNES
+  message("Ajustando códigos CNES...")
   data <- renomear_CNES(data)
-  message(".")
-  message(".")
-  message("Códigos códigos CNES ajustados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Ajustando códigos Tipo Histológico...")
+  cat("\n\n\n\n")
+
   # Aplicar a função renomear_tipo_histologico
+  message("Ajustando códigos Tipo Histológico...")
   data <- renomear_tipo_histologico(data)
-  message(".")
-  message(".")
-  message("Códigos códigos Tipo Histológico ajustados com sucesso.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
-  message("Banco de Dados criado com sucesso. foram adicionadas 7 colunas no dataframe final.")
-  message(".")
-  message(".")
-  message(".")
-  message(".")
+  cat("\n\n\n\n")
+
   # Aplicar a função analise_completude
   analise_completude(data)
 
+  cat("\n")
+
+  cat("Relatório Final:\n")
+  # Função para exibir informações finais
+  exibir_informacoes_finais <- function(tempo_total, data) {
+    # Calcular a quantidade de memória utilizada
+    memoria_usada <- object.size(data)
+    memoria_usada_mb <- round(memoria_usada / 1024^2, 2) # Convertendo para MB
+    memoria_usada_gb <- round(memoria_usada / 1024^3, 2) # Convertendo para GB
+
+    # Calcular o total de registros e variáveis
+    total_registros <- nrow(data)
+    total_variaveis <- ncol(data)
+
+    # Converter o tempo total de execução para minutos
+    tempo_total_minutos <- as.numeric(tempo_total, units = "mins")
+
+    # Exibir informações finais
+    message("Tempo total de execução: ", round(tempo_total_minutos, 2), " minutos.")
+    message("Memória utilizada: ", memoria_usada_mb, "MB (", memoria_usada_gb, "GB)")
+    message("Banco de dados final com ", total_registros, " registros de câncer e ", total_variaveis, " variáveis.")
+  }
+
+  # Medir o tempo total de execução
+  end_time_total <- Sys.time()
+  tempo_total <- end_time_total - start_time_total
+
+  exibir_informacoes_finais(tempo_total, data)
+
   return(data)
 }
-
-
-
-
-
 
 
 
@@ -2684,10 +2711,11 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
     valor <- eval(parse(text = parametro))
     if (!is.null(valor)) {
       if (!campo %in% names(dados)) {
-        stop(paste("Erro: O campo '", campo, "' não existe no dataframe.", sep = ""))
-      }
+        stop(paste("\033[1;31mErro: O campo '", campo, "' não existe no dataframe.\033[0m", sep = ""))
+          }
       if (!all(valor %in% dados[[campo]])) {
-        stop(paste("Erro: O valor fornecido para '", campo, "' não existe no dataframe.", sep = ""))
+        stop(paste("\033[1;31mErro: O valor fornecido para '", campo, "' não existe no dataframe.\033[0m", sep = ""))
+
       }
     }
   }
@@ -2701,7 +2729,8 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
   # Verificar se cid3digitos possui exatamente 3 caracteres
   if (!is.null(cid3digitos)) {
     if (any(nchar(cid3digitos) != 3)) {
-      stop("Erro: cid3digitos deve possuir exatamente 3 caracteres. Utilize cid4digitos para códigos mais longos.")
+      stop("\033[1;31mErro: cid3digitos deve possuir exatamente 3 caracteres. Utilize cid4digitos para códigos mais longos.\033[0m")
+
     }
     message("Filtrando dados com base nos códigos CID-3.")
     if (!is.vector(cid3digitos)) {
@@ -2713,7 +2742,8 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
   # Verificar se cid4digitos possui exatamente 4 caracteres com um ponto entre o penúltimo e o último
   if (!is.null(cid4digitos)) {
     if (any(nchar(cid4digitos) != 5 | !grepl("\\.[A-Za-z0-9]{1}$", cid4digitos))) {
-      stop("Erro: cid4digitos deve possuir exatamente 4 caracteres com um ponto entre o penúltimo e o último. Utilize cid3digitos para códigos mais curtos.")
+      stop("\033[1;31mErro: cid4digitos deve possuir exatamente 4 caracteres com um ponto entre o penúltimo e o último. Utilize cid3digitos para códigos mais curtos.\033[0m")
+
     }
     message("Filtrando dados com base nos códigos CID-4.")
     if (!is.vector(cid4digitos)) {
@@ -2749,7 +2779,8 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
   # Aplicar filtragem adicional com base no Tipo_de_Caso, se fornecido
   if (!is.null(tipo_de_caso)) {
     if (!tipo_de_caso %in% c("Analítico", "Não Analítico")) {
-      stop("Erro: tipo_de_caso deve ser 'Analítico' ou 'Não Analítico'.")
+      stop("\033[1;31mErro: tipo_de_caso deve ser 'Analítico' ou 'Não Analítico'.\033[0m")
+
     }
     message(paste("Filtrando dados com base no Tipo_de_Caso:", tipo_de_caso, "."))
     dados <- subset(dados, Tipo_de_Caso == tipo_de_caso)
@@ -2758,7 +2789,8 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
   # Aplicar filtragem adicional com base no Sexo, se fornecido
   if (!is.null(sexo)) {
     if (!sexo %in% c("Masculino", "Feminino")) {
-      stop("Erro: sexo deve ser 'Masculino' ou 'Feminino'.")
+      stop("\033[1;31mErro: sexo deve ser 'Masculino' ou 'Feminino'.\033[0m")
+
     }
     message(paste("Filtrando dados com base no Sexo:", sexo, "."))
     dados <- subset(dados, Sexo == sexo)
@@ -2801,7 +2833,8 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
   }
 
 
-  message("Filtragem dos dados concluída com sucesso.")
+  message(paste("\033[1;32m", "> Filtragem dos dados concluída com sucesso.", "\033[0m"))
+
 
   # Retornar o dataframe filtrado
   return(dados)

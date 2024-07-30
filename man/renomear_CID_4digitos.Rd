@@ -10,10 +10,10 @@ renomear_CID_4digitos(dados)
 \item{dados}{Um dataframe contendo a coluna \code{Localizacao_Primaria_4D}.}
 }
 \value{
-Retorna um dataframe com os nomes completos dos CID  de 4 dígitos adicionados em uma nova coluna.
+Retorna um dataframe com os nomes completos dos CID-O  de 4 dígitos adicionados em uma nova coluna.
 }
 \description{
-Esta função mapeia os códigos CID  de 4 dígitos para seus nomes completos na coluna \code{Localizacao_Primaria_4D} de um dataframe. Os nomes completos dos CID de 4 dígitos são adicionados em uma nova coluna \code{CID4d}.
+Esta função mapeia os códigos CID  de 4 dígitos para seus nomes completos na coluna \code{Localizacao_Primaria_4D} de um dataframe. Os nomes completos dos CID-O de 4 dígitos são adicionados em uma nova coluna \code{CID4d}.
 }
 \examples{
 # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:

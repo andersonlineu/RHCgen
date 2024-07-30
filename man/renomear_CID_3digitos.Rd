@@ -2,7 +2,7 @@
 % Please edit documentation in R/Funcoes_RHCgen.R
 \name{renomear_CID_3digitos}
 \alias{renomear_CID_3digitos}
-\title{Renomear CID de 3 Dígitos}
+\title{Renomear CID-O de 3 Dígitos}
 \usage{
 renomear_CID_3digitos(dados)
 }
@@ -10,10 +10,10 @@ renomear_CID_3digitos(dados)
 \item{dados}{Um dataframe contendo a coluna \code{Localizacao_Primaria_3D}.}
 }
 \value{
-Retorna um dataframe com os nomes completos dos CID  de 3 dígitos adicionados em uma nova coluna.
+Retorna um dataframe com os nomes completos dos CID-O de 3 dígitos adicionados em uma nova coluna.
 }
 \description{
-Esta função mapeia os códigos CID de 3 dígitos para seus nomes completos na coluna \code{Localizacao_Primaria_3D} de um dataframe. Os nomes completos dos CID  de 3 dígitos são adicionados em uma nova coluna \code{CID3d}.
+Esta função mapeia os códigos CID-O de 3 dígitos para seus nomes completos na coluna \code{Localizacao_Primaria_3D} de um dataframe. Os nomes completos dos CID-O de 3 dígitos são adicionados em uma nova coluna \code{CID3d}.
 }
 \examples{
 # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a funçao como:

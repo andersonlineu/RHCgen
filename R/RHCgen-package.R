@@ -1,4 +1,4 @@
-#' RHCgen é uma biblioteca desenvolvida para facilitar a construção de bancos de dados a partir das informações sobre registros de câncer disponíveis no Registro Hospitalar de Câncer (RHC).
+#' O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebido com o objetivo de automatizar e padronizar o processamento de dados provenientes do Registro Hospitalar de Câncer (RHC) no Brasil. Este pacote foi criado para abordar os desafios inerentes à manipulação de grandes volumes de dados heterogêneos, característicos dos registros hospitalares de câncer, proporcionando uma ferramenta eficiente, reprodutível e acessível para pesquisadores e profissionais de saúde.
 #'
 #' @name RHCgen-package
 #' @aliases RHCgen
@@ -20,6 +20,8 @@
 #' @seealso \code{\link{Baixar_Arquivos_DBF}}
 #'
 #' Links úteis:
+#'
+#' IntegradorRHC:  \url{ https://irhc.inca.gov.br/RHCNet/}
 #'
 #' Dicionário de Variáveis: \url{ https://irhc.inca.gov.br/RHCNet/documentosTabWin.action?doc=dicionario.dados}
 #'

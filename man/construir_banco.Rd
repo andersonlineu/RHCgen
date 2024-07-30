@@ -4,7 +4,7 @@
 \alias{construir_banco}
 \title{Construir Banco de Dados Automaticamente}
 \usage{
-construir_banco(data)
+construir_banco()
 }
 \arguments{
 \item{none}{Não são necessários parâmetros externos, pois a função opera com base no conteúdo do diretório especificado.}
