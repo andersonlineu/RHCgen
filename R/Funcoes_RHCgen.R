@@ -2600,6 +2600,7 @@ construir_banco <- function() {
     message("Tempo total de execução: ", round(tempo_total_minutos, 2), " minutos.")
     message("Memória utilizada: ", memoria_usada_mb, "MB (", memoria_usada_gb, "GB)")
     message("Banco de dados final com ", total_registros, " registros de câncer e ", total_variaveis, " variáveis.")
+    cat("\n Ver gráfico em Plots.\n")
   }
 
   # Medir o tempo total de execução
@@ -2610,9 +2611,6 @@ construir_banco <- function() {
 
   return(data)
 }
-
-
-
 
 
 #' Filtrar os Dados com Base em Vários Critérios
@@ -2680,10 +2678,9 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
                           primeiro_tratamento_hospital = NULL,
                           ano_inicio_tratamento = NULL, ano_fim_tratamento = NULL,
                           origem_do_encaminhamento = NULL,
-                          ano_do_banco_inicio = NULL, ano_do_banco_fim = NULL)
+                          ano_do_banco_inicio = NULL, ano_do_banco_fim = NULL) {
 
-
-{message("Verificando a existência dos campos necessários e validade dos valores dos parâmetros...")
+  message("Verificando a existência dos campos necessários e validade dos valores dos parâmetros...")
 
   # Lista de parâmetros e seus campos correspondentes no dataframe
   parametros <- list(cid3digitos = "Localizacao_Primaria_3D",
@@ -2704,139 +2701,130 @@ filtrar_banco <- function(dados = Seu_data_frame_aqui,
                      ano_do_banco_inicio = "Ano_do_Banco",
                      ano_do_banco_fim = "Ano_do_Banco")
 
-
   # Verificar se os parâmetros fornecidos existem no dataframe
   for (parametro in names(parametros)) {
     campo <- parametros[[parametro]]
     valor <- eval(parse(text = parametro))
-    if (!is.null(valor)) {
-      if (!campo %in% names(dados)) {
-        stop(paste("\033[1;31mErro: O campo '", campo, "' não existe no dataframe.\033[0m", sep = ""))
-          }
-      if (!all(valor %in% dados[[campo]])) {
-        stop(paste("\033[1;31mErro: O valor fornecido para '", campo, "' não existe no dataframe.\033[0m", sep = ""))
-
-      }
+    if (!is.null(valor) && !campo %in% names(dados)) {
+      stop(paste("\033[1;31mErro: O campo '", campo, "' não existe no dataframe.\033[0m", sep = ""))
     }
   }
 
-
-  message("Todos os campos e valores são válidos. Iniciando a filtragem dos dados.")
-
-
-  message("Iniciando a filtragem dos dados.")
+  message("Todos os campos são válidos. Iniciando a filtragem dos dados.")
 
   # Verificar se cid3digitos possui exatamente 3 caracteres
   if (!is.null(cid3digitos)) {
     if (any(nchar(cid3digitos) != 3)) {
       stop("\033[1;31mErro: cid3digitos deve possuir exatamente 3 caracteres. Utilize cid4digitos para códigos mais longos.\033[0m")
-
     }
     message("Filtrando dados com base nos códigos CID-3.")
-    if (!is.vector(cid3digitos)) {
-      cid3digitos <- c(cid3digitos)
-    }
-    dados <- subset(dados, Localizacao_Primaria_3D %in% cid3digitos)
+    dados <- subset(dados, tolower(Localizacao_Primaria_3D) %in% tolower(cid3digitos))
+    dados <- droplevels(dados)
   }
 
   # Verificar se cid4digitos possui exatamente 4 caracteres com um ponto entre o penúltimo e o último
   if (!is.null(cid4digitos)) {
     if (any(nchar(cid4digitos) != 5 | !grepl("\\.[A-Za-z0-9]{1}$", cid4digitos))) {
       stop("\033[1;31mErro: cid4digitos deve possuir exatamente 4 caracteres com um ponto entre o penúltimo e o último. Utilize cid3digitos para códigos mais curtos.\033[0m")
-
     }
     message("Filtrando dados com base nos códigos CID-4.")
-    if (!is.vector(cid4digitos)) {
-      cid4digitos <- c(cid4digitos)
-    }
-    dados <- subset(dados, Localizacao_Primaria_4D %in% cid4digitos)
+    dados <- subset(dados, tolower(Localizacao_Primaria_4D) %in% tolower(cid4digitos))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Ano_Triagem, se fornecido
   if (!is.null(ano_inicio_triagem) && !is.null(ano_fim_triagem)) {
     message(paste("Filtrando dados com base no Ano_Triagem entre", ano_inicio_triagem, "e", ano_fim_triagem, "."))
     dados <- subset(dados, Ano_Triagem >= ano_inicio_triagem & Ano_Triagem <= ano_fim_triagem)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Ano_Primeiro_Diagnostico, se fornecido
   if (!is.null(ano_inicio_diagnostico) && !is.null(ano_fim_diagnostico)) {
     message(paste("Filtrando dados com base no Ano_Primeiro_Diagnostico entre", ano_inicio_diagnostico, "e", ano_fim_diagnostico, "."))
     dados <- subset(dados, Ano_Primeiro_Diagnostico >= ano_inicio_diagnostico & Ano_Primeiro_Diagnostico <= ano_fim_diagnostico)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Ano_Primeira_Consulta, se fornecido
   if (!is.null(ano_inicio_primeira_consulta) && !is.null(ano_fim_primeira_consulta)) {
     message(paste("Filtrando dados com base no Ano_Primeira_Consulta entre", ano_inicio_primeira_consulta, "e", ano_fim_primeira_consulta, "."))
     dados <- subset(dados, Ano_Primeira_Consulta >= ano_inicio_primeira_consulta & Ano_Primeira_Consulta <= ano_fim_primeira_consulta)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base na Idade, se fornecido
   if (!is.null(idade_inicio) && !is.null(idade_fim)) {
     message(paste("Filtrando dados com base na Idade entre", idade_inicio, "e", idade_fim, "."))
     dados <- subset(dados, Idade >= idade_inicio & Idade <= idade_fim)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Tipo_de_Caso, se fornecido
   if (!is.null(tipo_de_caso)) {
-    if (!tipo_de_caso %in% c("Analítico", "Não Analítico")) {
+    tipo_de_caso <- tolower(iconv(tipo_de_caso, to = "ASCII//TRANSLIT"))
+    if (!tipo_de_caso %in% c("analitico", "nao analitico")) {
       stop("\033[1;31mErro: tipo_de_caso deve ser 'Analítico' ou 'Não Analítico'.\033[0m")
-
     }
     message(paste("Filtrando dados com base no Tipo_de_Caso:", tipo_de_caso, "."))
-    dados <- subset(dados, Tipo_de_Caso == tipo_de_caso)
+    dados <- subset(dados, tolower(iconv(Tipo_de_Caso, to = "ASCII//TRANSLIT")) == tipo_de_caso)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Sexo, se fornecido
   if (!is.null(sexo)) {
-    if (!sexo %in% c("Masculino", "Feminino")) {
+    if (!tolower(sexo) %in% c("masculino", "feminino")) {
       stop("\033[1;31mErro: sexo deve ser 'Masculino' ou 'Feminino'.\033[0m")
-
     }
     message(paste("Filtrando dados com base no Sexo:", sexo, "."))
-    dados <- subset(dados, Sexo == sexo)
+    dados <- subset(dados, tolower(Sexo) == tolower(sexo))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Estado_Residencia, se fornecido
   if (!is.null(estado_residencia)) {
     message(paste("Filtrando dados com base no Estado de Residência:", estado_residencia, "."))
-    dados <- subset(dados, Estado_Residencia %in% estado_residencia)
+    dados <- subset(dados, tolower(Estado_Residencia) %in% tolower(estado_residencia))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no UF_Unidade_Hospital, se fornecido
   if (!is.null(uf_unidade_hospital)) {
     message(paste("Filtrando dados com base na UF da Unidade Hospitalar:", uf_unidade_hospital, "."))
-    dados <- subset(dados, UF_Unidade_Hospital %in% uf_unidade_hospital)
+    dados <- subset(dados, tolower(UF_Unidade_Hospital) %in% tolower(uf_unidade_hospital))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Primeiro_Tratamento_Hospital, se fornecido
   if (!is.null(primeiro_tratamento_hospital)) {
     message(paste("Filtrando dados com base no Primeiro Tratamento Hospitalar:", primeiro_tratamento_hospital, "."))
-    dados <- subset(dados, Primeiro_Tratamento_Hospital == primeiro_tratamento_hospital)
+    dados <- subset(dados, tolower(Primeiro_Tratamento_Hospital) == tolower(primeiro_tratamento_hospital))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Ano_Inicio_Tratamento, se fornecido
   if (!is.null(ano_inicio_tratamento) && !is.null(ano_fim_tratamento)) {
     message(paste("Filtrando dados com base no Ano_Inicio_Tratamento entre", ano_inicio_tratamento, "e", ano_fim_tratamento, "."))
     dados <- subset(dados, Ano_Inicio_Tratamento >= ano_inicio_tratamento & Ano_Inicio_Tratamento <= ano_fim_tratamento)
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base na Origem_do_Encaminhamento, se fornecido
   if (!is.null(origem_do_encaminhamento)) {
     message(paste("Filtrando dados com base na Origem do Encaminhamento:", origem_do_encaminhamento, "."))
-    dados <- subset(dados, Origem_do_Encaminhamento == origem_do_encaminhamento)
+    dados <- subset(dados, tolower(Origem_do_Encaminhamento) == tolower(origem_do_encaminhamento))
+    dados <- droplevels(dados)
   }
 
   # Aplicar filtragem adicional com base no Ano_do_Banco, se fornecido
   if (!is.null(ano_do_banco_inicio) && !is.null(ano_do_banco_fim)) {
     message(paste("Filtrando dados com base no Ano_do_Banco entre", ano_do_banco_inicio, "e", ano_do_banco_fim, "."))
     dados <- subset(dados, Ano_do_Banco >= ano_do_banco_inicio & Ano_do_Banco <= ano_do_banco_fim)
+    dados <- droplevels(dados)
   }
 
-
   message(paste("\033[1;32m", "> Filtragem dos dados concluída com sucesso.", "\033[0m"))
-
 
   # Retornar o dataframe filtrado
   return(dados)
 }
-
