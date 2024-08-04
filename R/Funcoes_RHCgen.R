@@ -93,7 +93,7 @@ leraquivoDBF <- function() {
   # Unir os data frames usando rbind
   if (length(lista_dataframes) > 0) {
     dataRHCCombinados <- do.call(rbind, lista_dataframes)
-    message(paste("\033[1;32m", "> Carregamento dos arquivos e estruturação do dataframe finalizados com sucesso! Foi adicionada uma coluna chamada Ano_do_Banco no final do dataframe.", "\033[0m"))
+    message(paste("\033[1;32m", "> Carregamento dos arquivos e estruturação do dataframe finalizados com sucesso! Foi adicionada uma coluna chamada Ano_do_Banco no dataframe.", "\033[0m"))
 
     return(dataRHCCombinados)
   } else {
@@ -162,7 +162,7 @@ renomear_colunas <- function(data) {
     DATAINITRT = "Data_Inicio_Primeiro_Tratamento",
     DATAOBITO = "Data_Obito",
     VALOR_TOT = "Valor_Total",
-    ESTADIAG = "Estadiamento_Clinico_TNM_grupo(1985-1999)"
+    ESTADIAG = "Estadiamento_Clinico_TNM_grupo_1985_1999"
   )
 
   # Contador de colunas renomeadas
@@ -532,6 +532,35 @@ recodificar_variaveis <- function(data) {
     variaveis_recodificadas <- c(variaveis_recodificadas, "Base_Mais_Importante_Diagnostico_Sem_Patologicas")
   }
 
+  # 'Estadiamento_Clinico_TNM_grupo_1985_1999'
+  if ("Estadiamento_Clinico_TNM_grupo_1985_1999" %in% names(data)) {
+    message("Recodificando 'Estadiamento_Clinico_TNM_grupo_1985_1999'.")
+    data$Estadiamento_Clinico_TNM_grupo_1985_1999 <- ifelse(
+      data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "1", "Estádio I",
+      ifelse(
+        data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "2", "Estádio II",
+        ifelse(
+          data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "3", "Estádio III",
+          ifelse(
+            data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "4", "Estádio IV",
+            ifelse(
+              data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "8", "Não se aplica",
+              ifelse(
+                data$Estadiamento_Clinico_TNM_grupo_1985_1999 == "9", "Sem informação",
+                data$Estadiamento_Clinico_TNM_grupo_1985_1999
+              )
+            )
+          )
+        )
+      )
+    )
+    data$Estadiamento_Clinico_TNM_grupo_1985_1999 <- factor(
+      data$Estadiamento_Clinico_TNM_grupo_1985_1999,
+      levels = c("Estádio I", "Estádio II", "Estádio III", "Estádio IV", "Não se aplica", "Sem informação")
+    )
+    contador_recodificacoes <- contador_recodificacoes + 1
+    variaveis_recodificadas <- c(variaveis_recodificadas, "Estadiamento_Clinico_TNM_grupo_1985_1999")
+  }
 
 
 
@@ -599,7 +628,7 @@ renomear_siglas_estados <- function(dados) {
     stop("\033[1;31mNenhuma das colunas necessárias ('Estado_Residencia' ou 'UF_Unidade_Hospital') foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message(paste("\033[1;32m", "> Mapeamento das siglas dos estados concluído. Foram adicionadas", colunas_adicionadas, "coluna(s) no final do dataframe.", "\033[0m"))
+  message(paste("\033[1;32m", "> Mapeamento das siglas dos estados concluído. Foram adicionadas", colunas_adicionadas, "coluna(s) no dataframe.", "\033[0m"))
 
   return(dados)
 }
@@ -696,7 +725,7 @@ renomear_CID_3digitos <- function(dados) {
   dados$CID3d <- map[dados$Localizacao_Primaria_3D]
   message("Nomes completos dos CID-O de 3 dígitos adicionados.")
 
-  message(paste("\033[1;32m", "> Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID3d.", "\033[0m"))
+  message(paste("\033[1;32m", "> Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no dataframe, chamada CID3d.", "\033[0m"))
 
   return(dados)
 }
@@ -1505,7 +1534,7 @@ renomear_CID_4digitos <- function(dados) {
   dados$CID4d <- map[dados$Localizacao_Primaria_4D]
   message("Nomes completos dos CID-O de 4 dígitos adicionados.")
 
-  message(paste("\033[1;32m", "> Ajuste dos códigos CID-O de 4 dígitos concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada CID4d.", "\033[0m"))
+  message(paste("\033[1;32m", "> Ajuste dos códigos CID-O de 4 dígitos concluído com sucesso. Foi adicionada uma coluna no dataframe, chamada CID4d.", "\033[0m"))
 
   return(dados)
 }
@@ -1940,7 +1969,7 @@ renomear_CNES <- function(dados) {
     stop("\033[1;31mA coluna 'CNES_Hospital' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message(paste("\033[1;32m", "> Ajuste dos códigos CNES concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Estabelecimento_Hospitalar.", "\033[0m"))
+  message(paste("\033[1;32m", "> Ajuste dos códigos CNES concluído com sucesso. Foi adicionada uma coluna no dataframe, chamada Estabelecimento_Hospitalar.", "\033[0m"))
 
   return(dados)
 }
@@ -2275,11 +2304,12 @@ renomear_tipo_histologico <- function(dados) {
     stop("\033[1;31mA coluna 'Tipo_Histologico' não foi encontrada no dataframe. Função interrompida.\033[0m")
   }
 
-  message(paste("\033[1;32m", "> Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi adicionada uma coluna no final do dataframe, chamada Tipo_Histologico_Completo.", "\033[0m"))
+  message(paste("\033[1;32m", "> Ajuste dos códigos de Tipo Histológico concluído com sucesso. Foi adicionada uma coluna no dataframe, chamada Tipo_Histologico_Completo.", "\033[0m"))
 
   return(dados)
 
 }
+
 
 
 
@@ -2320,9 +2350,10 @@ analise_completude <- function(dados) {
   dados_ausentes <- sapply(dados, function(x) {
     sum(is.na(x) | as.character(x) == "Sem informação")
   })
-  message("Calculando a proporção de Dados Ausentes por coluna")
+
+  message("Calculando a proporção de Dados Ausentes por coluna.")
   # Calcular a porcentagem de NA's por coluna em porcentagem, arredondada para duas casas decimais (usada no gráfico)
-  porcentagem <- round((dados_ausentes / nrow(dados)) * 100, 2)
+  porcentagem <- round((dados_ausentes / numero_linhas) * 100, 2)
 
   # Calcular a completude como o complemento da porcentagem
   completude <- round(100 - porcentagem, 2)
@@ -2353,11 +2384,11 @@ analise_completude <- function(dados) {
                          Dados_Ausentes = dados_ausentes,
                          Classificacao_Completude = classificacao,
                          row.names = NULL)
-  cat("\n\n")
+
   message(paste("Tabela – Análise da qualidade dos dados por Classificação da Completude de",
                 numero_linhas,
-                "registros de câncer do RHC de um período de", quantidade_anos, "anos,", intervalo_anos,"."))
-  cat("\n")
+                "registros de câncer do RHC de um período de", quantidade_anos, "anos,", intervalo_anos, "."))
+
   # Ordenar a tabela em ordem crescente de Dados_Ausentes
   Ausentes <- Ausentes[order(Ausentes$Dados_Ausentes), ]
 
@@ -2397,17 +2428,16 @@ analise_completude <- function(dados) {
   mtext("Classificação de Completude: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças \n menores de um ano registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.",
         side = 1, line = 4, at = 0.1, cex = 0.8, col = "black", xpd = TRUE, adj = 0)
 
+  # Forçar a atualização da aba "Plots"
+  dev.flush()
+
+
   cat("\n\n\n")
   cat("Informações extras:\n")
   cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.")
   cat("\n\n")
   message(paste("\033[1;32m", "> Análise de completude concluída.", "\033[0m"))
-
 }
-
-
-
-
 
 
 
@@ -2556,6 +2586,16 @@ construir_banco <- function() {
   data <- renomear_siglas_estados(data)
   cat("\n\n\n\n")
 
+  # Aplicar a função renomear_codigo_municipio_residencia
+  message("Convertendo códigos dos municípios para nomes completos...")
+  data <- renomear_codigo_municipio_residencia(data)
+  cat("\n\n\n\n")
+
+  # Aplicar a função renomear_codigo_municipio_hospital
+  message("Convertendo códigos dos municípios para nomes completos...")
+  data <- renomear_codigo_municipio_hospital(data)
+  cat("\n\n\n\n")
+
   # Aplicar a função renomear_CID_3digitos
   message("Ajustando códigos CID de 3 dígitos...")
   data <- renomear_CID_3digitos(data)
@@ -2574,6 +2614,11 @@ construir_banco <- function() {
   # Aplicar a função renomear_tipo_histologico
   message("Ajustando códigos Tipo Histológico...")
   data <- renomear_tipo_histologico(data)
+  cat("\n\n\n\n")
+
+  # Aplicar a função ordenando_colunas
+  message("Reordenando as colunas...")
+  data <- ordenando_colunas(data)
   cat("\n\n\n\n")
 
   # Aplicar a função analise_completude
@@ -2600,7 +2645,7 @@ construir_banco <- function() {
     message("Tempo total de execução: ", round(tempo_total_minutos, 2), " minutos.")
     message("Memória utilizada: ", memoria_usada_mb, "MB (", memoria_usada_gb, "GB)")
     message("Banco de dados final com ", total_registros, " registros de câncer e ", total_variaveis, " variáveis.")
-    cat("\n Ver gráfico em Plots.\n")
+    cat("\n\n")
   }
 
   # Medir o tempo total de execução

@@ -14,8 +14,8 @@ O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebid
 | modificar_tipo_variavel | Converte os tipos de variáveis em um dataframe, garantindo que cada coluna tenha o tipo de dados apropriado. |
 | recodificar_variaveis   | Recodifica variáveis categóricas em um dataframe conforme o dicionário de variáveis do Registro Hospitalar de Câncer (RHC). |
 | renomear_siglas_estados | Converte siglas de estados brasileiros em nomes completos nas variáveis de estado de residência e unidade hospitalar. |
-| renomear_CID_3digitos   | Converte os códigos CID-0 de 3 dígitos para seus nomes completos. |
-| renomear_CID_4digitos   | Converte os códigos CID-0 de 4 dígitos para seus nomes completos. |
+| renomear_CID_3digitos   | Converte os códigos CID-O de 3 dígitos para seus nomes completos. |
+| renomear_CID_4digitos   | Converte os códigos CID-O de 4 dígitos para seus nomes completos. |
 | renomear_CNES           | Converte os códigos CNES para os nomes completos. |
 | renomear_tipo_histologico | Converte os códigos Tipo Histológico para os nomes completos. |
 | analise_completude      | Calcula e avalia a completude de cada variável em um dataframe e gera um gráfico de barras horizontal. |
