@@ -5,13 +5,13 @@
 #' @param data Um dataframe contendo as variáveis a serem verificadas.
 #' @return Retorna um dataframe com o quantitativo e a proporção de códigos inexistentes por variável.
 #' @export
-#' @name casos_com_codigos_inexistentes
+#' @name verificar_codigos_inexistentes
 #' @examples
 #' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 #'
-#' resultados_codigos_inexistentes <- casos_com_codigos_inexistentes(dados_RHC_combinados)
+#' resultados_codigos_inexistentes <- verificar_codigos_inexistentes(dados_RHC_combinados)
 
-casos_com_codigos_inexistentes <- function(data) {
+verificar_codigos_inexistentes <- function(data) {
   message("Iniciando a verificação de casos com códigos inexistentes nas variáveis.")
 
   # Lista de variáveis e suas descrições esperadas
@@ -391,7 +391,7 @@ casos_com_codigos_inexistentes <- function(data) {
           stringsAsFactors = FALSE
         ))
 
-        message(paste("Códigos inexistentes encontrados na variável", variavel, ":\033[1;31m", qtd_codigos_inexistentes, "(", proporcao_codigos_inexistentes, ")\033[0m"))
+        message(paste("Códigos inexistentes encontrados na variável", variavel, ":\033[1;32m", qtd_codigos_inexistentes, "(", proporcao_codigos_inexistentes, ")\033[0m"))
       } else {
         message(paste("Nenhum código inexistente encontrado na variável", variavel, "."))
       }

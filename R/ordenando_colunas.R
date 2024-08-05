@@ -17,7 +17,7 @@ ordenando_colunas <- function(dados) {
     "Tabagismo", "Estado_Residencia", "Nome_Estado_Residencia", "Codigo_Municipio_Residencia", "Nome_Municipio_Residencia", "Ano_Primeiro_Diagnostico",
     "Origem_do_Encaminhamento", "Exames_Relevantes_para_Diagnostico", "Estado_conjugal", "Ano_Triagem",
     "Ano_Primeira_Consulta", "Diagnosticos_e_Tratamentos_Anterior", "Base_Mais_Importante_Diagnostico",
-    "Localizacao_Primaria_3D", "CID3d", "Localizacao_Primaria_4D", "CID4d", "Tipo_Histologico", "Tipo_Histologico_Completo",
+    "Localizacao_Primaria_3D", "CID3d", "Classificacao_CID_O", "Localizacao_Primaria_4D", "CID4d", "Tipo_Histologico", "Tipo_Histologico_Completo",
     "Lateralidade", "Local_Provavel_Tumor", "Mais_de_Um_Tumor", "Classificacao_TNM", "Estadiamento_Clinico",
     "Outro_Estadiamento_Clinico", "TNM_Patologico", "Razao_Nao_Tratamento", "Ano_Inicio_Tratamento",
     "Primeiro_Tratamento_Hospital", "Estado_Doenca_Final_Tratamento", "CNES_Hospital", "Estabelecimento_Hospitalar",

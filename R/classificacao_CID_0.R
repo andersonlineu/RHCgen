@@ -121,7 +121,7 @@ classificacao_CID_0 <- function(data) {
     }
   })
 
-  message("\033[1;32mClassificação das neoplasias malignas conforme o CID-O concluída.\033[0m")
+  message("\033[1;32mClassificação das neoplasias malignas conforme o CID-O concluída. Foi adicionado uma coluna no dataframe final.\033[0m")
 
   return(data)
 }

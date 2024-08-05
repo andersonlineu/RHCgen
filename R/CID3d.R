@@ -87,6 +87,9 @@ renomear_CID_3digitos <- function(dados) {
   dados$CID3d <- map[dados$Localizacao_Primaria_3D]
   message("Nomes completos dos CID-O de 3 dígitos adicionados.")
 
+  #Classifica as Neoplasias Malignas
+  dados <- classificacao_CID_0(dados)
+
   message(paste("\033[1;32m", "> Ajuste dos códigos CID-3 dígitos concluído com sucesso. Foi adicionada uma coluna no dataframe, chamada CID3d.", "\033[0m"))
 
   return(dados)

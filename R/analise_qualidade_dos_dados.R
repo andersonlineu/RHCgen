@@ -19,7 +19,7 @@ analise_qualidade_dos_dados <- function(data) {
   cat("\n\n\n\n")
   message("\033[1;32mVERIFICANDO CASOS COM CÓDIGOS INEXISTENTES...\033[0m")
   tryCatch({
-    casos_com_codigos_inexistentes(data)
+    verificar_codigos_inexistentes(data)
   }, error = function(e) {
     message("\033[1;31mERRO NA VERIFICAÇÃO DE CÓDIGOS INEXISTENTES:\033[0m ", toupper(e$message))
   })
