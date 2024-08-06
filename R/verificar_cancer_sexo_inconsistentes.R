@@ -24,7 +24,7 @@ verificar_cancer_sexo_inconsistentes <- function(data) {
     }
   }
 
-  message("Iniciando a verificação de inconsistências entre CID-O e Sexo.")
+  message("\033[1;32mIniciando a verificação de inconsistências entre CID-O e Sexo.\033[0m")
 
   # Mapear os CID-O para seus nomes completos
   cid_feminino_map <- c(

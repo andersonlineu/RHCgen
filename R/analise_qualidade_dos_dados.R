@@ -17,11 +17,11 @@ analise_qualidade_dos_dados <- function(data) {
 
   # Verificação de Códigos Inexistentes
   cat("\n\n\n\n")
-  message("\033[1;32mVERIFICANDO CASOS COM CÓDIGOS INEXISTENTES...\033[0m")
+  message("\033[1;32mVERIFICANDO CASOS COM CÓDIGOS INCONSISTENTES\033[0m")
   tryCatch({
-    verificar_codigos_inexistentes(data)
+    verificar_codigos_inconsistentes(data)
   }, error = function(e) {
-    message("\033[1;31mERRO NA VERIFICAÇÃO DE CÓDIGOS INEXISTENTES:\033[0m ", toupper(e$message))
+    message("\033[1;31mERRO NA VERIFICAÇÃO DE CÓDIGOS INCONSISTENTES:\033[0m ", toupper(e$message))
   })
 
   # Verificação de Idades Inconsistentes

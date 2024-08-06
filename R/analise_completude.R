@@ -15,7 +15,7 @@
 #'
 #' OBSERVAÇÃO: Sem atribuir a nenhum objeto.
 analise_completude <- function(dados) {
-  message("Iniciando a análise de completude de dados.")
+  message("\033[32mIniciando a análise de completude de dados.\033[0m")
 
   # Número de linhas do dataframe
   numero_linhas <- nrow(dados)
@@ -68,9 +68,9 @@ analise_completude <- function(dados) {
                          Classificacao_Completude = classificacao,
                          row.names = NULL)
 
-  message(paste("Tabela – Análise da qualidade dos dados por Classificação da Completude de",
+  message(paste("\033[32mTabela – Análise da qualidade dos dados por Classificação da Completude de",
                 numero_linhas,
-                "registros de câncer do RHC de um período de", quantidade_anos, "anos,", intervalo_anos, "."))
+                "registros de câncer do RHC de um período de", quantidade_anos, "anos,", intervalo_anos, ".\033[0m"))
 
   # Ordenar a tabela em ordem crescente de Dados_Ausentes
   Ausentes <- Ausentes[order(Ausentes$Dados_Ausentes), ]

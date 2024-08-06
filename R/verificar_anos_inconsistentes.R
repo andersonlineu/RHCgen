@@ -27,7 +27,7 @@ verificar_anos_inconsistentes <- function(data) {
     }
   }
 
-  message("Iniciando a verificação de inconsistências entre os anos.")
+  message("\033[32mIniciando a verificação de inconsistências entre os anos.\033[0m")
 
   # Função para calcular inconsistências
   calcular_inconsistencias <- function(condicao, label) {

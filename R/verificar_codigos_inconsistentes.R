@@ -1,18 +1,18 @@
-#' Verifica Casos com Códigos Inexistentes em um Dataframe
+#' Verifica Códigos inconsistentes em um Dataframe
 #'
-#' Esta função verifica se há códigos inexistentes nas variáveis de um dataframe. As variáveis e seus códigos esperados são definidos dentro da função. A função retorna um dataframe com o quantitativo e a proporção de códigos inexistentes por variável.
+#' Esta função verifica se há códigos inconsistentes (campos preenchidos com códigos inexistentes na Ficha de Registro de Tumor ou com formatos incorretos de preenchimento) nas variáveis de um dataframe. As variáveis e seus códigos esperados são definidos dentro da função. A função retorna um dataframe com o quantitativo e a proporção de códigos inconsistentes por variável.
 #'
 #' @param data Um dataframe contendo as variáveis a serem verificadas.
-#' @return Retorna um dataframe com o quantitativo e a proporção de códigos inexistentes por variável.
+#' @return Retorna um dataframe com o quantitativo e a proporção de códigos inconsistentes por variável.
 #' @export
-#' @name verificar_codigos_inexistentes
+#' @name verificar_codigos_inconsistentes
 #' @examples
 #' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 #'
-#' resultados_codigos_inexistentes <- verificar_codigos_inexistentes(dados_RHC_combinados)
+#' resultados_codigos_inconsistentes <- verificar_codigos_inconsistentes(dados_RHC_combinados)
 
-verificar_codigos_inexistentes <- function(data) {
-  message("Iniciando a verificação de casos com códigos inexistentes nas variáveis.")
+verificar_codigos_inconsistentes <- function(data) {
+  message("\033[32mIniciando a verificação de campos preenchidos com códigos inexistentes na Ficha de Registro de Tumor ou com formatos incorretos de preenchimento.\033[0m")
 
   # Lista de variáveis e suas descrições esperadas
   descricoes_esperadas <- list(
@@ -374,7 +374,7 @@ verificar_codigos_inexistentes <- function(data) {
     stringsAsFactors = FALSE
   )
 
-  # Verificar casos com códigos inexistentes
+  # Verificar casos com códigos inconsistentes
   for (variavel in names(descricoes_esperadas)) {
     if (variavel %in% names(data)) {
       valores_esperados <- descricoes_esperadas[[variavel]]
@@ -391,9 +391,9 @@ verificar_codigos_inexistentes <- function(data) {
           stringsAsFactors = FALSE
         ))
 
-        message(paste("Códigos inexistentes encontrados na variável", variavel, ":\033[1;32m", qtd_codigos_inexistentes, "(", proporcao_codigos_inexistentes, ")\033[0m"))
+        message(paste("Códigos inconsistentes encontrados na variável", variavel, ":\033[1;32m", qtd_codigos_inexistentes, "(", proporcao_codigos_inexistentes, ")\033[0m"))
       } else {
-        message(paste("Nenhum código inexistente encontrado na variável", variavel, "."))
+        message(paste("Nenhum código inconsistente encontrado na variável", variavel, "."))
       }
     } else {
       message(paste("Variável ausente:\033[1;31m", variavel, "\033[0m"))
@@ -401,9 +401,9 @@ verificar_codigos_inexistentes <- function(data) {
   }
 
   if (nrow(resultados) == 0) {
-    message("\033[1;32mNenhum código inexistente encontrado em todas as variáveis verificadas.\033[0m")
+    message("\033[1;32mNenhum código inconsistente encontrado em todas as variáveis verificadas.\033[0m")
   } else {
-    message("\033[1;32mVerificação de códigos inexistentes concluída.\033[0m")
+    message("\033[1;32mVerificação de códigos inconsistente concluída.\033[0m")
   }
 
   return(resultados)

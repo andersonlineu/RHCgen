@@ -7,7 +7,7 @@
 verificar_datas_inconsistentes(data)
 }
 \arguments{
-\item{data}{Um dataframe contendo as colunas "Data_Diagnostico", "Data_Primeira_Consulta", "Data_Triagem" e "Data_Inicio_Primeiro_Tratamento".}
+\item{data}{Um dataframe contendo as colunas "Data_Diagnostico", "Data_Primeira_Consulta", "Data_Triagem", "Data_Inicio_Primeiro_Tratamento" e "Data_Obito".}
 }
 \value{
 Retorna um dataframe com o quantitativo e a proporção de inconsistências por verificação.
@@ -15,12 +15,16 @@ Retorna um dataframe com o quantitativo e a proporção de inconsistências por 
 \description{
 Esta função verifica se há inconsistências na ordem cronológica das datas fornecidas em um dataframe. As verificações incluem:
 \itemize{
-\item "Data_Diagnostico" deve ser anterior ou igual a "Data_Primeira_Consulta"
-\item "Data_Diagnostico" deve ser anterior ou igual a "Data_Triagem"
-\item "Data_Inicio_Primeiro_Tratamento" deve ser anterior ou igual a "Data_Primeira_Consulta"
-\item "Data_Inicio_Primeiro_Tratamento" deve ser anterior ou igual a "Data_Triagem"
-\item "Data_Inicio_Primeiro_Tratamento" deve ser anterior ou igual a "Data_Diagnostico"
-A função considera uma diferença mínima de 30 dias para ser considerada inconsistente.
+\item "Data_Diagnostico" deve ser posterior a "Data_Primeira_Consulta"
+\item "Data_Diagnostico" deve ser posterior a "Data_Triagem"
+\item "Data_Inicio_Primeiro_Tratamento" deve ser posterior a "Data_Primeira_Consulta"
+\item "Data_Inicio_Primeiro_Tratamento" deve ser posterior a "Data_Triagem"
+\item "Data_Inicio_Primeiro_Tratamento" deve ser posterior a "Data_Diagnostico"
+\item "Data_Obito" deve ser posterior a "Data_Primeira_Consulta"
+\item "Data_Obito" deve ser posterior a "Data_Triagem"
+\item "Data_Obito" deve ser posterior a "Data_Diagnostico"
+\item "Data_Obito" deve ser posterior a "Data_Inicio_Primeiro_Tratamento"
+A função considera uma diferença mínima de 12 meses (365 dias) para ser considerada inconsistente.
 }
 }
 \examples{
