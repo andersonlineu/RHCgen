@@ -13,7 +13,7 @@
 ordenando_colunas <- function(dados) {
   colunas <- c(
     "Tipo_de_Caso", "Sexo", "Idade", "Local_Nascimento", "Raca_Cor", "Escolaridade",
-    "Clinica_Atendimento", "Clinica_Tratamento", "Historico_Familiar_Cancer", "Consumo_Alcool",
+    "Clinica_Atendimento", "Nome_Clinica_Atendimento", "Clinica_Tratamento", "Nome_Clinica_Tratamento", "Historico_Familiar_Cancer", "Consumo_Alcool",
     "Tabagismo", "Estado_Residencia", "Nome_Estado_Residencia", "Codigo_Municipio_Residencia", "Nome_Municipio_Residencia", "Ano_Primeiro_Diagnostico",
     "Origem_do_Encaminhamento", "Exames_Relevantes_para_Diagnostico", "Estado_conjugal", "Ano_Triagem",
     "Ano_Primeira_Consulta", "Diagnosticos_e_Tratamentos_Anterior", "Base_Mais_Importante_Diagnostico",
