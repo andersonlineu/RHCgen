@@ -18,7 +18,7 @@ ordenando_colunas <- function(dados) {
     "Origem_do_Encaminhamento", "Exames_Relevantes_para_Diagnostico", "Estado_conjugal", "Ano_Triagem",
     "Ano_Primeira_Consulta", "Diagnosticos_e_Tratamentos_Anterior", "Base_Mais_Importante_Diagnostico",
     "Localizacao_Primaria_3D", "CID3d", "Classificacao_CID_O", "Localizacao_Primaria_4D", "CID4d", "Tipo_Histologico", "Tipo_Histologico_Completo",
-    "Lateralidade", "Local_Provavel_Tumor", "Mais_de_Um_Tumor", "Classificacao_TNM", "Estadiamento_Clinico",
+    "Lateralidade", "Local_Provavel_Tumor", "Mais_de_Um_Tumor", "Classificacao_TNM", "Estadiamento_Clinico", "Nome_Estadiamento_Clinico",
     "Outro_Estadiamento_Clinico", "TNM_Patologico", "Razao_Nao_Tratamento", "Ano_Inicio_Tratamento",
     "Primeiro_Tratamento_Hospital", "Estado_Doenca_Final_Tratamento", "CNES_Hospital", "Estabelecimento_Hospitalar",
     "UF_Unidade_Hospital", "Nome_Estado_Hospital", "Municipio_Unidade_Hospital", "Nome_Municipio_Hospital", "Ocupacao_Paciente", "Data_Diagnostico", "Data_Triagem",

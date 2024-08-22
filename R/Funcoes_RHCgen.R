@@ -334,6 +334,11 @@ construir_banco <- function() {
   data <- renomear_clinica(data)
   cat("\n\n\n\n")
 
+  # Aplicar a função renomear_tipo_histologico
+  message("Ajustando Estadiamento Clínico")
+  data <- renomear_estadiamento_clinico(data)
+  cat("\n\n\n\n")
+
   # Aplicar a função ordenando_colunas
   message("Reordenando as colunas...")
   data <- ordenando_colunas(data)
