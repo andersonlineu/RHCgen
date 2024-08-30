@@ -17,6 +17,8 @@ O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebid
 | renomear_CID_4digitos           | Converte os códigos CID-O de 4 dígitos para seus nomes completos.                                                               |
 | renomear_CNES                   | Converte os códigos CNES para os nomes completos.                                                                               |
 | renomear_tipo_histologico       | Converte os códigos Tipo Histológico para os nomes completos.                                                                   |
+| renomear_clinica                | Converte os códigos das Clínicas de Atendimento e Tratamento para os nomes completos.                                           |
+| renomear_estadiamento_clinico   | Renomeia o Estadiamento Clínico para a classificação mais geral.                                                                |
 | analise_completude              | Calcula e avalia a completude de cada variável em um dataframe, gerando uma tabela e um gráfico de completude.                  |
 | analise_completude_ano          | Avalia a completude de cada variável por ano, gerando uma tabela detalhada de completude.                                       |
 | verificar_codigos_inconsistentes| Verifica códigos inconsistentes em um dataframe de registros hospitalares de câncer e retorna o quantitativo e a proporção de inconsistências. |
@@ -26,6 +28,7 @@ O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebid
 | verificar_cancer_sexo_inconsistentes | Verifica se os códigos CID-O dos cânceres estão de acordo com a variável Sexo em um dataframe de registros hospitalares de câncer e retorna o quantitativo e a proporção de inconsistências. |
 | construir_banco                 | Constrói todo o banco de dados a partir de arquivos DBF, automatizando etapas como leitura, junção, renomeação de colunas, modificação de tipos de variáveis, recodificação e ajuste de códigos CID-O, CNES, tipo histológico. Finaliza com a avaliação da completude do banco de dados. |
 | filtrar_banco                   | Filtra um dataframe com base em critérios como códigos CID, anos de triagem, anos de diagnóstico, idade, tipo de caso, sexo, estado de residência, unidade hospitalar, primeiro tratamento hospitalar, ano de início do tratamento, ano do banco de dados e origem do encaminhamento. |
+
 
 ---
 
