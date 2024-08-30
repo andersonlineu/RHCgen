@@ -34,16 +34,27 @@ analise_completude <- function(dados) {
     sum(is.na(x) | as.character(x) == "Sem informação")
   })
 
-  message("Calculando a proporção de Dados Ausentes por coluna.")
-  # Calcular a porcentagem de NA's por coluna em porcentagem, arredondada para duas casas decimais (usada no gráfico)
-  porcentagem <- round((dados_ausentes / numero_linhas) * 100, 2)
+  # Se a coluna Data_Obito existir, calcula a completude específica
+  if ("Data_Obito" %in% variaveis) {
+    Data_Obito_Ausente <- sum(is.na(dados$Data_Obito) & dados$Estado_Doenca_Final_Tratamento == "Óbito")
+    Porcentagem_Data_Obito_Ausente  <- (Data_Obito_Ausente / numero_linhas)
+    Porcentagem_Completude <- (1 - Porcentagem_Data_Obito_Ausente) * 100
+    dados_ausentes["Data_Obito"] <- Data_Obito_Ausente
+    completude <- round(100 - (dados_ausentes / numero_linhas) * 100, 2)
+    completude[variaveis == "Data_Obito"] <- round(Porcentagem_Completude, 2)
+  } else {
+    # Calcular a porcentagem de NA's por coluna em porcentagem, arredondada para duas casas decimais (usada no gráfico)
+    porcentagem <- round((dados_ausentes / numero_linhas) * 100, 2)
 
-  # Calcular a completude como o complemento da porcentagem
-  completude <- round(100 - porcentagem, 2)
+    # Calcular a completude como o complemento da porcentagem
+    completude <- round(100 - porcentagem, 2)
+  }
 
   # Função para classificar a completude com base no escore de Romero & Cunha
   classificar_completude <- function(p) {
-    if (p >= 95) {
+    if (is.na(p)) {
+      return(NA)
+    } else if (p >= 95) {
       return("Excelente")
     } else if (p >= 90) {
       return("Bom")
@@ -56,8 +67,8 @@ analise_completude <- function(dados) {
     }
   }
 
-  # Aplicar a classificação
-  classificacao <- sapply(completude, classificar_completude)
+  # Aplicar a classificação, ignorando valores NA
+  classificacao <- sapply(completude, function(p) ifelse(is.na(p), NA, classificar_completude(p)))
 
   message("Tabela de resultados:")
 
@@ -101,7 +112,7 @@ analise_completude <- function(dados) {
   # Adicionar os valores de Dados_Ausentes, Porcentagem e Classificação no final das barras
   text(x = Ausentes$Dados_Ausentes,
        y = bp,
-       labels = paste(Ausentes$Dados_Ausentes, " (", porcentagem[order(dados_ausentes)], "%, ", Ausentes$Classificacao_Completude, ")", sep = ""),
+       labels = paste(Ausentes$Dados_Ausentes, " (", completude[order(dados_ausentes)], "%, ", Ausentes$Classificacao_Completude, ")", sep = ""),
        pos = 4,
        cex = 0.7,
        col = "black",
@@ -114,11 +125,9 @@ analise_completude <- function(dados) {
   # Forçar a atualização da aba "Plots"
   dev.flush()
 
-
   cat("\n\n\n")
   cat("Informações extras:\n")
   cat("Classificação de Completude. Escore proposto por Romero & Cunha: ROMERO, Dalia E.; CUNHA, Cynthia Braga da. \n Avaliação da qualidade das variáveis sócio-econômicas e demográficas dos óbitos de crianças menores de um ano \n registrados no Sistema de Informações sobre Mortalidade do Brasil (1996/2001). Cadernos de Saúde Pública, v. 22, p. 673-681, 2006.")
   cat("\n\n")
   message(paste("\033[1;32m", "> Análise de completude concluída.", "\033[0m"))
 }
-
