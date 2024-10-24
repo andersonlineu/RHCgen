@@ -15,7 +15,7 @@
 #' # Se nenhum arquivo for encontrado ou se houver erros ao juntar os arquivos, dados_combinados será NULL.
 #' # Caso contrário, você terá um dataframe com todos os dados combinados dos arquivos DBF.
 leraquivoDBF <- function() {
-  # Carregar o pacote foreign se necessário
+  # Instala e carrega o pacote foreign
   if (!require(foreign, quietly = TRUE)) {
     install.packages("foreign")
     library(foreign)

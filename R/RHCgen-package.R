@@ -28,6 +28,8 @@
 #'
 #' Dicionário de Variáveis: \url{https://irhc.inca.gov.br/RHCNet/documentosTabWin.action?doc=dicionario.dados}
 #'
+#' Também veja o Dicionário de Variáveis com o nome e a descrição após a criação de todo o banco de dados: \code{\link{Dicionario_Dados}}
+#'
 #' Escore de Completude:  \url{https://www.scielo.br/j/csp/a/HXqrdksBsMrr4R9Ydnnmqcf/?format=pdf&lang=pt}
 #'
 #' ------------------------------------------------------------------------
