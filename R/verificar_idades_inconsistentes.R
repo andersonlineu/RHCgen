@@ -9,7 +9,7 @@
 #' @examples
 #' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 #'
-#' resultados_idades_invalidas <- verificar_idades_invalidas(dados_RHC_combinados)
+#' resultados_idades_invalidas <- verificar_idades_inconsistentes(dados_RHC_combinados)
 verificar_idades_inconsistentes<- function(data) {
   if (!"Idade" %in% colnames(data)) {
     message("\033[1;31mErro: Coluna 'Idade' ausente no dataframe.\033[0m")

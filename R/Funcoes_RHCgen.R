@@ -6,15 +6,15 @@
 #' @return Retorna um dataframe que junta todos os arquivos DBF no diretório, ou NULL se nenhum arquivo válido for encontrado ou se eles não puderem ser combinados devido a inconsistências nas estruturas de colunas.
 #' É fundamental que todos os arquivos tenham o mesmo nome que vieram do IntegradorRHC e estejam todos na pasta de trabalho.
 #' @export
-#' @name leraquivoDBF
+#' @name lerarquivoDBF
 #' @examples
 #' # Supondo que você tenha no diretório de trabalho arquivos DBF do RHC que permanecem com o mesmo nome que vieram do Integrador (Exemplo: rhc20.dbf, nome padrão do RHC inciando que o ano do banco contidono arquvio é 2020).
 #' # Use a função da seguinte forma:
 #'
-#' dados_RHC_combinados <- leraquivoDBF()
+#' dados_RHC_combinados <- lerarquivoDBF()
 #' # Se nenhum arquivo for encontrado ou se houver erros ao juntar os arquivos, dados_combinados será NULL.
 #' # Caso contrário, você terá um dataframe com todos os dados combinados dos arquivos DBF.
-leraquivoDBF <- function() {
+lerarquivoDBF <- function() {
   # Instala e carrega o pacote foreign
   if (!require(foreign, quietly = TRUE)) {
     install.packages("foreign")
@@ -267,8 +267,8 @@ construir_banco <- function() {
   # Iniciar medição do tempo total
   start_time_total <- Sys.time()
 
-  # Aplicar a função leraquivoDBF
-  data <- leraquivoDBF()
+  # Aplicar a função lerarquivoDBF
+  data <- lerarquivoDBF()
 
   # Verificação se a lista está vazia (NULL)
   if (is.null(data)) {
