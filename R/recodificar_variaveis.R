@@ -169,12 +169,12 @@ recodificar_variaveis <- function(data) {
   # 'Diagnosticos_e_Tratamentos_Anterior'
   if ("Diagnosticos_e_Tratamentos_Anterior" %in% names(data)) {
     message("Recodificando 'Diagnosticos_e_Tratamentos_Anterior'.")
-    data$Diagnosticos_e_Tratamentos_Anterior <- ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "1", "Sem diagnóstico/Sem tratamento",
-                                                       ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "2", "Com diagnóstico/Sem tratamento",
-                                                              ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "3", "Com diagnóstico/Com tratamento",
+    data$Diagnosticos_e_Tratamentos_Anterior <- ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "1", "Sem diagnóstico e Sem tratamento",
+                                                       ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "2", "Com diagnóstico e Sem tratamento",
+                                                              ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "3", "Com diagnóstico e Com tratamento",
                                                                      ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "4", "Outros",
                                                                             ifelse(data$Diagnosticos_e_Tratamentos_Anterior == "9", "Sem informação", data$Diagnosticos_e_Tratamentos_Anterior)))))
-    data$Diagnosticos_e_Tratamentos_Anterior <- factor(data$Diagnosticos_e_Tratamentos_Anterior, levels = c("Sem diagnóstico/Sem tratamento", "Com diagnóstico/Sem tratamento", "Com diagnóstico/Com tratamento", "Outros", "Sem informação"))
+    data$Diagnosticos_e_Tratamentos_Anterior <- factor(data$Diagnosticos_e_Tratamentos_Anterior, levels = c("Sem diagnóstico e Sem tratamento", "Com diagnóstico e Sem tratamento", "Com diagnóstico e Com tratamento", "Outros", "Sem informação"))
     contador_recodificacoes <- contador_recodificacoes + 1
     variaveis_recodificadas <- c(variaveis_recodificadas, "Diagnosticos_e_Tratamentos_Anterior")
   }
