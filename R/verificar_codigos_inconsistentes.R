@@ -29,8 +29,8 @@ verificar_codigos_inconsistentes <- function(data) {
                                            "Endoscopia e cirurgia exploradora", "Anatomia patológica",
                                            "Marcadores tumorais", "Não se aplica", "Sem informação", "99", "999", "88", "888"),
     Estado_conjugal = c("Solteiro", "Casado", "Viúvo", "Separado judicialmente", "União consensual", "Sem informação", "99", "999", "88", "888"),
-    Diagnosticos_e_Tratamentos_Anterior = c("Sem diagnóstico/Sem tratamento", "Com diagnóstico/Sem tratamento",
-                                            "Com diagnóstico/Com tratamento", "Outros", "Sem informação", "99", "999", "88", "888"),
+    Diagnosticos_e_Tratamentos_Anterior = c("Sem diagnóstico e Sem tratamento", "Com diagnóstico e Sem tratamento",
+                                            "Com diagnóstico e Com tratamento", "Outros", "Sem informação", "99", "999", "88", "888"),
     Base_Mais_Importante_Diagnostico = c("Clínica", "Pesquisa clínica", "Exame por imagem", "Marcadores tumorais",
                                          "Citologia", "Histologia da metástase", "Histologia do tumor primário", "Sem informação", "99", "999", "88", "888"),
     Lateralidade = c("Direita", "Esquerda", "Bilateral", "Não se aplica", "Sem informação", "99", "999", "88", "888"),
@@ -244,7 +244,7 @@ verificar_codigos_inconsistentes <- function(data) {
       "8000/0",	"8005/0",	"8152/1",	"8156/3",	"8272/0",	"8313/1",	"8408/1",	"8634/1",	"8728/1",	"8762/1",	"8825/0",	"8827/1",	"8834/1",	"8857/3",	"8936/0",	"9135/1",	"9136/1",	"9195/3",	"9342/3",	"9491/0",	"9571/0",	"9715/3",	"9961/1",	"9990/1",	"9990/9", "99", "999", "88", "888", "9999/9", "99999", "8888/8", "88888"
     ),
     Local_Provavel_Tumor = c(
-      "C00.0", "C00.1", "C00.2", "C00.3", "C00.4", "C00.5", "C00.6", "C00.8", "C00.9", "C01",
+                                "C00.0", "C00.1", "C00.2", "C00.3", "C00.4", "C00.5", "C00.6", "C00.8", "C00.9", "C01",
                                 "C02.0", "C02.1", "C02.2", "C02.3", "C02.4", "C02.8", "C02.9", "C03.0", "C03.1", "C03.9",
                                 "C04.0", "C04.1", "C04.8", "C04.9", "C05.0", "C05.1", "C05.2", "C05.8", "C05.9", "C06.0",
                                 "C06.1", "C06.2", "C06.8", "C06.9", "C07", "C08.0", "C08.1", "C08.8", "C08.9", "C09.0",

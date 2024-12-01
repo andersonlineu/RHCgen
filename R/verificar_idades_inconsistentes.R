@@ -10,7 +10,7 @@
 #' # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 #'
 #' resultados_idades_invalidas <- verificar_idades_inconsistentes(dados_RHC_combinados)
-verificar_idades_inconsistentes<- function(data) {
+verificar_idades_inconsistentes <- function(data) {
   if (!"Idade" %in% colnames(data)) {
     message("\033[1;31mErro: Coluna 'Idade' ausente no dataframe.\033[0m")
     return(NULL)
@@ -21,8 +21,14 @@ verificar_idades_inconsistentes<- function(data) {
   # Filtrar valores não NA na coluna Idade
   nao_na <- !is.na(data$Idade)
 
-  # Verificar idades inválidas
-  idades_invalidas <- data$Idade[nao_na] < 0 | data$Idade[nao_na] > 150
+  # Verificar idades inválidas (menores que 0 ou maiores que 150)
+  idades_invalidas_valores <- data$Idade[nao_na] < 0 | data$Idade[nao_na] > 150
+
+  # Verificar idades com zeros à esquerda (representadas como 01, 07, etc.)
+  idades_com_zero_esquerda <- data$Idade[nao_na] %% 1 == 0 & grepl("^0[1-9]", sprintf("%02d", data$Idade[nao_na]))
+
+  # Combinar todas as inconsistências
+  idades_invalidas <- idades_invalidas_valores | idades_com_zero_esquerda
   qtd_idades_invalidas <- sum(idades_invalidas, na.rm = TRUE)
   proporcao_idades_invalidas <- paste0(round((qtd_idades_invalidas / sum(nao_na)) * 100, 2), "%")
 
@@ -30,7 +36,7 @@ verificar_idades_inconsistentes<- function(data) {
   if (qtd_idades_invalidas > 0) {
     message(paste("\033[1;31mIdades inconsistentes encontradas:", qtd_idades_invalidas, "(", proporcao_idades_invalidas, ")\033[0m"))
   } else {
-    message("Nenhuma idade inconsistentes encontrada.")
+    message("Nenhuma idade inconsistente encontrada.")
   }
 
   # Criar dataframe de resultados

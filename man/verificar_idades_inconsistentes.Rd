@@ -18,5 +18,5 @@ Esta função verifica se há idades inválidas (menores que zero ou maiores que
 \examples{
 # Escreva o nome do dataframe e execute a função. Se seu dataframe for "dados_RHC_combinados", use a função como:
 
-resultados_idades_invalidas <- verificar_idades_invalidas(dados_RHC_combinados)
+resultados_idades_invalidas <- verificar_idades_inconsistentes(dados_RHC_combinados)
 }
