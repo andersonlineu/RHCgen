@@ -215,7 +215,7 @@ modificar_tipo_variavel <- function(data) {
 
   # Converter a coluna Idade para numérico
   if ("Idade" %in% names(data)) {
-    data$Idade <- as.numeric(data$Idade)
+    data$Idade <- as.numeric(as.character(data$Idade))
     message("Convertendo a variável 'Idade' para numérico.")
   }
 
