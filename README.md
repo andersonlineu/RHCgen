@@ -1,4 +1,4 @@
-## RHCgen
+## RHCgen: Um Pacote R para Automação, Padronização e Avaliação da Qualidade dos Dados do Registro Hospitalar de Câncer no Brasil
 ***
 **RHCgen** é um pacote desenvolvido em R para automatizar e padronizar o processamento de dados do Registro Hospitalar de Câncer (RHC) no Brasil. O pacote implementa um pipeline completo de preparação de dados, incluindo leitura, harmonização estrutural, padronização semântica e avaliação da qualidade dos dados.
 
