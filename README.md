@@ -4,6 +4,8 @@
 
 Foi concebido para lidar com grandes volumes de dados heterogêneos, provenientes de diferentes períodos e versões do RHC, permitindo a construção reprodutível de bases analíticas.
 
+O desenvolvimento do RHCgen é um produto que integra a minha tese de doutorado em Epidemiologia em Saúde Pública da Escola Nacional de Saúde Pública Sergio Arouca (ENSP/Fiocruz).
+
 ---
 
 ## Principais funcionalidades
@@ -42,7 +44,7 @@ O RHCgen organiza o processamento dos dados em quatro etapas principais:
 
 ### Instalação
 
-### Versão de desenvolvimento do GitHub
+### Versão de desenvolvimento do GitHub. RHCgen 1.0
 
 ```r
 # install.packages("remotes")
