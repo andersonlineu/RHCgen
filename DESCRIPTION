@@ -1,6 +1,6 @@
 Package: RHCgen
 Title: Pacote R para Automação e Padronização do Processamento de Dados do
-    RHC (por Anderson Lineu)
+    RHC
 Version: 0.1.0
 Authors@R: 
     person("Anderson", "Lineu", , "andersonlineu@gmail.com", role = c("aut", "cre"))
