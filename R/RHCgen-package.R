@@ -1,9 +1,9 @@
-#' O RHCgen é um pacote desenvolvido para a linguagem de programação R, concebido com o objetivo de automatizar e padronizar o processamento de dados provenientes do Registro Hospitalar de Câncer (RHC) no Brasil. Este pacote foi criado para abordar os desafios inerentes à manipulação de grandes volumes de dados heterogêneos, característicos dos registros hospitalares de câncer, proporcionando uma ferramenta eficiente, reprodutível e acessível para pesquisadores e profissionais de saúde.
+#' O RHCgen é um pacote desenvolvido em R para automatizar e padronizar o processamento de dados do Registro Hospitalar de Câncer (RHC) no Brasil. O pacote implementa um pipeline completo de extração, transformação e estruturação dos dados, incluindo integração de arquivos, harmonização estrutural, padronização semântica e avaliação da qualidade dos registros. Sua concepção responde à heterogeneidade histórica dos dados do RHC, permitindo a geração reprodutível de bases analíticas a partir de dados brutos.
 #'
 #' @name RHCgen-package
 #' @aliases RHCgen
 #' @docType package
-#' @title RHCgen: Pacote para construção de Banco de Dados de registros de câncer do RHC
+#' @title RHCgen: Um Pacote R para Automação, Padronização e Avaliação da Qualidade dos Dados do Registro Hospitalar de Câncer no Brasil
 #'
 #' @details Veja o guia passo a passo sobre como baixar os arquivos DBF no IntegradorRHC: \code{\link{Baixar_Arquivos_DBF}}
 #'
@@ -20,9 +20,6 @@
 #'
 #' Links úteis:
 #'
-#' Todos os arquivos DBF do RHC 1985-1999:  \url{https://1drv.ms/f/s!Al8LbsUUcnUJiPwx8DeFbAkG_YMQfw?e=JXhSgt}
-#'
-#' Todos os arquivos DBF do RHC 2000-2022:  \url{https://1drv.ms/f/s!Al8LbsUUcnUJiJsttNv4HVyHLn7sUg?e=PMWmsL}
 #'
 #' IntegradorRHC:  \url{https://irhc.inca.gov.br/RHCNet/}
 #'
