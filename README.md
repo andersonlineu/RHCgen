@@ -17,6 +17,20 @@ Guithub: https://rstudio-pubs-static.s3.amazonaws.com/1431388_eba5fe9188d5401891
 
 E-Book: https://andersonlineu.github.io/RHCgen-ebook/
 
+---
+### Instalação
+
+### Versão de desenvolvimento do GitHub. RHCgen 1.0
+
+```r
+# install.packages("remotes")
+remotes::install_github("andersonlineu/RHCgen")
+
+Obs.: É necessário ter instalado previamente o pacote "remotes".
+```
+
+---
+
 ## Principais funcionalidades
 
 O RHCgen organiza o processamento dos dados em quatro etapas principais:
@@ -51,18 +65,6 @@ O RHCgen organiza o processamento dos dados em quatro etapas principais:
 
 ---
 
-### Instalação
-
-### Versão de desenvolvimento do GitHub. RHCgen 1.0
-
-```r
-# install.packages("remotes")
-remotes::install_github("andersonlineu/RHCgen")
-
-Obs.: É necessário ter instalado previamente o pacote "remotes".
-```
-
----
 ### Link do IntegradorRHC
 
 - [IntegradorRHC](https://irhc.inca.gov.br/RHCNet/)
