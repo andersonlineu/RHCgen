@@ -30,6 +30,26 @@ Obs.: É necessário ter instalado previamente o pacote "remotes".
 ```
 
 ---
+## Como citar:
+
+Santos, A. L. S. dos ., Oliveira, T. N. da C., Saldanha, R. de F., & Oliveira, R. de V. C. de . (2026). RHCgen: Um Pacote R para Automação, Padronização e Avaliação da Qualidade dos Dados do Registro Hospitalar de Câncer no Brasil. Zenodo. https://doi.org/10.5281/zenodo.19962293
+
+## BibTeX
+
+@techreport{santos_rhcgen_2026,
+  author    = {Santos, Anderson Lineu Siqueira dos and
+               Oliveira, Tatyellen Natasha da Costa and
+               Saldanha, Raphael de Freitas and
+               Oliveira, Raquel de Vasconcellos Carvalhaes de},
+  title     = {{RHCgen}: Um Pacote {R} para Automação, Padronização e
+               Avaliação da Qualidade dos Dados do Registro Hospitalar
+               de Câncer no Brasil},
+  year      = {2026},
+  doi       = {10.5281/zenodo.19962293},
+  publisher = {Zenodo}
+}
+
+---
 
 ## Principais funcionalidades
 
