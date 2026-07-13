@@ -7,6 +7,15 @@ Foi concebido para lidar com grandes volumes de dados heterogêneos, proveniente
 O desenvolvimento do RHCgen é um produto que integra a minha tese de doutorado em Epidemiologia em Saúde Pública da Escola Nacional de Saúde Pública Sergio Arouca (ENSP/Fiocruz).
 
 ---
+## Orientações e Guia
+
+### Nota Técnica/E-book
+
+Zenodo: https://zenodo.org/records/19962293
+
+Guithub: https://rstudio-pubs-static.s3.amazonaws.com/1431388_eba5fe9188d5401891e7dfd62217adee.html
+
+E-Book: https://andersonlineu.github.io/RHCgen-ebook/
 
 ## Principais funcionalidades
 
